@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{90CA7B8B-8EFB-4EE6-A538-E1938CBEE845}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="Src\FastHoldem.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Test\FastHoldemTest.dproj">
+            <Dependencies>Src\FastHoldem.dproj</Dependencies>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="FastHoldem">
+        <MSBuild Projects="Src\FastHoldem.dproj"/>
+    </Target>
+    <Target Name="FastHoldem:Clean">
+        <MSBuild Projects="Src\FastHoldem.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FastHoldem:Make">
+        <MSBuild Projects="Src\FastHoldem.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="FastHoldemTest" DependsOnTargets="FastHoldem">
+        <MSBuild Projects="Test\FastHoldemTest.dproj"/>
+    </Target>
+    <Target Name="FastHoldemTest:Clean" DependsOnTargets="FastHoldem:Clean">
+        <MSBuild Projects="Test\FastHoldemTest.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="FastHoldemTest:Make" DependsOnTargets="FastHoldem:Make">
+        <MSBuild Projects="Test\FastHoldemTest.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="FastHoldem;FastHoldemTest"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="FastHoldem:Clean;FastHoldemTest:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="FastHoldem:Make;FastHoldemTest:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
