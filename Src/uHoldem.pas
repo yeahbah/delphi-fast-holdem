@@ -3,7 +3,7 @@ unit uHoldem;
 interface
 
 uses
-  uHandTypes;
+  uHandTypes, System.Generics.Collections;
 
 type
   THand = class(TInterfacedObject, IComparable)
@@ -28,10 +28,13 @@ type
     ///   compared using a normal arithmitic compare function
     /// </summary>
     fHandVal: uint32;
-  private
     function GetPocketCards: string;
     procedure SetPocketCards(const Value: string);
     class function NextCard(aCards: string; var aIndex: integer): integer; static;
+    procedure SetBoard(const Value: string);
+  private
+    function GetPocketMask: uint64;
+    procedure SetPocketMask(const Value: uint64);
   public
     constructor Create; overload;
     constructor Create(aPocket, aBoard: string); overload;
@@ -81,9 +84,25 @@ type
     class function Evaluate(aCards: uint64; aNumberOfCards: integer): uint32;
 
     /// <summary>
+    ///  Evaluates the card mask and returns the type of mask it is. This function
+    ///  is faster (but provides less information) than Evaluate or Evaluate.
+    /// </summary>
+    class function EvaluateType(aMask: uint64): THandTypes; overload; static;
+
+    /// <summary>
+    ///  This function is faster (but provides less information) than Evaluate or Evaluate
+    /// </summary>
+    class function EvaluateType(aMask: uint64; aCards: integer): THandTypes; overload; static;
+
+    /// <summary>
     ///  Reads a string definition of a card and returns the Card value
     /// </summary>
     class function ParseCard(aCard: string): integer; static;
+
+    /// <summary>
+    ///  turns a card mask into the equivalent human readable string
+    /// </summary>
+    class function MaskToString(aMask: uint64): string; static;
 
     class function DescriptionFromHandValue(aHandValue: uint32): string; static;
 
@@ -91,6 +110,11 @@ type
     ///  Evaluates a hand and returns a descriptive string
     /// </summary>
     class function DescriptionFromMask(aCards: uint64): string; static;
+
+    /// <summary>
+    ///  Takes a string describing a mask and returns the description
+    /// </summary>
+    class function DescriptionFromHand(aMask: string): string; static;
 
     class function HandType(aHandValue: uint32): uint32; static;
 
@@ -108,19 +132,49 @@ type
 
     class function HandTypeValue(aHandType: THandTypes): uint32; static;
 
+    /// <summary>
+    ///  Test for equality
+    /// </summary>
+    function Equals(Obj: TObject): boolean; override;
+
+    /// <summary>
+    ///  Test if HandValue is Greater than passed in THand object
+    /// </summary>
+    function IsGreaterThan(aHand: THand): boolean; virtual;
+    function IsGreaterThanEqual(aHand: THand): boolean; virtual;
+
+    /// <summary>
+    ///  Test if HandValue is Less than passed in THand object
+    /// </summary>
+    function IsLessThan(aHand: THand): boolean; virtual;
+    function IsLessThanEqual(aHand: THand): boolean; virtual;
+
+    procedure UpdateHandMask;
+
+    function ToString: string; override;
+
+
     property PocketCards: string read GetPocketCards write SetPocketCards;
+    property HandValue: uint32 read fHandVal;
+    property Board: string read fBoard write SetBoard;
+    property MaskValue: uint64 read fHandMask;
+    property PocketMask: uint64 read GetPocketMask write SetPocketMask;
   end;
 
 implementation
 
 uses
-  SysUtils, uHoldemConstants;
+  SysUtils, uHoldemConstants, uYield;
 
 { THoldem }
 
 function THand.CompareTo(Obj: TObject): integer;
 begin
+  var hand := Obj as THand;
+  if hand = nil then
+    Exit(-1);
 
+  result := integer(HandValue - hand.HandValue);
 end;
 
 constructor THand.Create;
@@ -154,9 +208,48 @@ begin
   result := uint32(aHandType) shl THoldemConstants.HAND_TYPE_SHIFT;
 end;
 
+function THand.IsLessThan(aHand: THand): boolean;
+begin
+  {$IFDEF DEBUG}
+  if not Assigned(aHand) then raise EArgumentException.Create('aHand is undefined');
+  {$ENDIF}
+
+  result := HandValue < aHand.HandValue;
+end;
+
+function THand.IsLessThanEqual(aHand: THand): boolean;
+begin
+  result := HandValue <= aHand.HandValue;
+end;
+
 class function THand.Mask(aIndex: integer): uint64;
 begin
   result := CardMasksTable[aIndex];
+end;
+
+class function THand.MaskToString(aMask: uint64): string;
+begin
+  var sb := TStringBuilder.Create;
+  try
+    var count := 0;
+
+    for var i := 51 downto 0 do
+    begin
+      if ((1 shl i) and aMask) <> 0 then
+      begin
+        var card := CardTable[i];
+        if count <> 0 then
+          sb.Append(' ');
+
+        sb.Append(card);
+        Inc(count);
+      end;
+    end;
+
+    result := sb.ToString();
+  finally
+    sb.Free;
+  end;
 end;
 
 class function THand.SecondCard(aHandValue: uint32): uint32;
@@ -174,77 +267,103 @@ begin
   result := (aHandValue shr THoldemConstants.TOP_CARD_SHIFT) and THoldemConstants.CARD_MASK;
 end;
 
+function THand.ToString: string;
+begin
+  result := PocketCards +' '+ Board;
+end;
+
+procedure THand.UpdateHandMask;
+begin
+  var cards := 0;
+  fHandMask := THand.ParseHand(PocketCards, Board, cards);
+  fHandVal := THand.Evaluate(fHandMask, cards);
+end;
+
+class function THand.DescriptionFromHand(aMask: string): string;
+begin
+  var cards: integer := 0;
+  {$IFDEF DEBUG}
+  if aMask.Trim = '' then raise EArgumentException.Create('Invalid mask');
+  {$ENDIF}
+
+  result := DescriptionFromMask(ParseHand(aMask, cards));
+end;
+
 class function THand.DescriptionFromHandValue(aHandValue: uint32): string;
 begin
   var sb := TStringBuilder.Create;
-  case THandTypes(HandType(aHandValue)) of
-    THandTypes.HighCard:
-      begin
-        sb.Append('High Card: ');
-        sb.Append(RankTable[TopCard(aHandValue)]);
-      end;
+  try
+    case THandTypes(HandType(aHandValue)) of
+      THandTypes.HighCard:
+        begin
+          sb.Append('High Card: ');
+          sb.Append(RankTable[TopCard(aHandValue)]);
+        end;
 
-    THandTypes.Pair:
-      begin
-        sb.Append('One Pair, ');
-        sb.Append(RankTable[TopCard(aHandValue)]);
-      end;
+      THandTypes.Pair:
+        begin
+          sb.Append('One Pair, ');
+          sb.Append(RankTable[TopCard(aHandValue)]);
+        end;
 
-    THandTypes.TwoPair:
-      begin
-        sb.Append('Two Pair, ');
-        sb.Append(RankTable[TopCard(aHandValue)]);
-        sb.Append('''s and ');
-        sb.Append(RankTable[SecondCard(aHandValue)]);
-        sb.Append('''s with a ');
-        sb.Append(RankTable[ThirdCard(aHandValue)]);
-        sb.Append(' for a kicker');
-      end;
+      THandTypes.TwoPair:
+        begin
+          sb.Append('Two Pair, ');
+          sb.Append(RankTable[TopCard(aHandValue)]);
+          sb.Append('''s and ');
+          sb.Append(RankTable[SecondCard(aHandValue)]);
+          sb.Append('''s with a ');
+          sb.Append(RankTable[ThirdCard(aHandValue)]);
+          sb.Append(' for a kicker');
+        end;
 
-    THandTypes.Trips:
-      begin
-        sb.Append('Three Of A Kind, ');
-        sb.Append(RankTable[TopCard(aHandValue)]);
-        sb.Append('''s');
-      end;
+      THandTypes.Trips:
+        begin
+          sb.Append('Three Of A Kind, ');
+          sb.Append(RankTable[TopCard(aHandValue)]);
+          sb.Append('''s');
+        end;
 
-    THandTypes.Straight:
-      begin
-        sb.Append('A Straight, ');
-        sb.Append(RankTable[TopCard(aHandValue)]);
-        sb.Append(' high');
-      end;
+      THandTypes.Straight:
+        begin
+          sb.Append('A Straight, ');
+          sb.Append(RankTable[TopCard(aHandValue)]);
+          sb.Append(' high');
+        end;
 
-    THandTypes.Flush:
-      begin
-        sb.Append('A Flush, ');
-        sb.Append(RankTable[TopCard(aHandValue)]);
-        sb.Append(' high');
-      end;
+      THandTypes.Flush:
+        begin
+          sb.Append('A Flush, ');
+          sb.Append(RankTable[TopCard(aHandValue)]);
+          sb.Append(' high');
+        end;
 
-    THandTypes.FullHouse:
-      begin
-        sb.Append('A Fullhouse, ');
-        sb.Append(RankTable[TopCard(aHandValue)]);
-        sb.Append('''s full of ');
-        sb.Append(RankTable[SecondCard(aHandValue)]);
-        sb.Append('''s');
-      end;
+      THandTypes.FullHouse:
+        begin
+          sb.Append('A Fullhouse, ');
+          sb.Append(RankTable[TopCard(aHandValue)]);
+          sb.Append('''s full of ');
+          sb.Append(RankTable[SecondCard(aHandValue)]);
+          sb.Append('''s');
+        end;
 
-    THandTypes.FourOfAKind:
-      begin
-        sb.Append('Four Of A Kind, ');
-        sb.Append(RankTable[TopCard(aHandValue)]);
-        sb.Append('''s');
-      end;
+      THandTypes.FourOfAKind:
+        begin
+          sb.Append('Four Of A Kind, ');
+          sb.Append(RankTable[TopCard(aHandValue)]);
+          sb.Append('''s');
+        end;
 
-    THandTypes.StraightFlush:
-      begin
-        sb.Append('A Straight Flush');
-      end;
+      THandTypes.StraightFlush:
+        begin
+          sb.Append('A Straight Flush');
+        end;
+    end;
+
+    result := sb.ToString;
+  finally
+    sb.Free;
   end;
-
-  result := sb.ToString;
 end;
 
 class function THand.DescriptionFromMask(aCards: uint64): string;
@@ -264,12 +383,17 @@ begin
   var handValue := Evaluate(aCards, numberOfcards);
 end;
 
+function THand.Equals(Obj: TObject): boolean;
+begin
+  if not (Obj is THand) then
+    Exit(false);
+
+  result := HandValue = THand(Obj).HandValue;
+end;
+
 class function THand.Evaluate(aCards: uint64; aNumberOfCards: integer): uint32;
 begin
   result := 0;
-  var fourMask: uint32 := 0;
-  var threeMask: uint32 := 0;
-  var twoMask: uint32 := 0;
 
   {$IFDEF DEBUG}
   if (aNumberOfCards < 1) or (aNumberOfCards > 7) then raise EArgumentException.Create('Invalid number of cards');
@@ -288,13 +412,241 @@ begin
   // determine immediately that this is the best possible mask
   if nRanks >= 5 then
   begin
+    if uHoldemConstants.BitsTable[ss] >= 5 then
+    begin
+      if StraightTable[ss] <> 0 then
+        Exit(THoldemConstants.HANDTYPE_VALUE_STRAIGHTFLUSH + uint32(StraightTable[ss] shl THoldemConstants.TOP_CARD_SHIFT))
+      else
+        result := THoldemConstants.HANDTYPE_VALUE_FLUSH + TopFiveCardsTable[ss];
+    end
+    else if uHoldemConstants.BitsTable[sc] >= 5 then
+    begin
+      if StraightTable[sc] <> 0 then
+        Exit(THoldemConstants.HANDTYPE_VALUE_STRAIGHTFLUSH + uint32(StraightTable[sc] shl THoldemConstants.TOP_CARD_SHIFT))
+      else
+        result := THoldemConstants.HANDTYPE_VALUE_FLUSH + TopFiveCardsTable[sc];
+    end
+    else
+    if uHoldemConstants.BitsTable[sd] >= 5 then
+    begin
+      if StraightTable[sd] <> 0 then
+        Exit(THoldemConstants.HANDTYPE_VALUE_STRAIGHTFLUSH + uint32(StraightTable[sd] shl THoldemConstants.TOP_CARD_SHIFT))
+      else
+        result := THoldemConstants.HANDTYPE_VALUE_FLUSH + TopFiveCardsTable[sd];
+    end
+    else
+    if uHoldemConstants.BitsTable[sh] >= 5 then
+    begin
+      if StraightTable[sd] <> 0 then
+        Exit(THoldemConstants.HANDTYPE_VALUE_STRAIGHTFLUSH + uint32(StraightTable[sh] shl THoldemConstants.TOP_CARD_SHIFT))
+      else
+        result := THoldemConstants.HANDTYPE_VALUE_FLUSH + TopFiveCardsTable[sh];
+    end
+    else
+    begin
+      var st: uint32 := StraightTable[ranks];
+      if st <> 0 then
+        result := THoldemConstants.HANDTYPE_VALUE_STRAIGHT + (st shl THoldemConstants.TOP_CARD_SHIFT);
+    end;
+
+    if (result <> 0) and (nDups < 3) then
+      Exit(result);
+  end;
+
+  // By the time we're here, either:
+  // 1) There's no five-card mask possible (flush or straight), or
+  // 2) There's a flush or straight, but we know that there are enough
+  //    duplicates to make a full house / quads possible
+  var fourMask: uint32 := 0;
+  var threeMask: uint32 := 0;
+  var twoMask: uint32 := 0;
+
+  case nDups of
+    0: Exit(THoldemConstants.HANDTYPE_VALUE_HIGHCARD + TopFiveCardsTable[ranks]);
+    1: begin
+         var t, kickers: uint32;
+         twoMask := ranks xor (sc xor sd xor sh xor ss);
+
+         result := uint32(THoldemConstants.HANDTYPE_VALUE_PAIR + (TopCardTable[twoMask] shl THoldemConstants.TOP_CARD_SHIFT));
+         t := ranks xor twoMask; // Only one bit set in twoMask
+
+         // Get the top five cards in what is left, drop all but the top three
+         // cards, and shift them by one to get the three desired kickers
+         kickers := (TopFiveCardsTable[t] shr THoldemConstants.CARD_WIDTH) and not THoldemConstants.FIFTH_CARD_MASK;
+         result := result + kickers;
+         Exit(result);
+       end;
+
+    2: begin
+         // either two pair or trips
+         twoMask := ranks xor (sc xor sd xor sh xor ss);
+         if twoMask <> 0 then
+         begin
+           var t: uint32 := ranks xor twoMask;
+           result := uint32(THoldemConstants.HANDTYPE_VALUE_TWOPAIR
+                     + (TopFiveCardsTable[twoMask] and (THoldemConstants.TOP_CARD_MASK or THoldemConstants.SECOND_CARD_MASK))
+                     + (TopCardTable[t] shl THoldemConstants.THIRD_CARD_SHIFT));
+           Exit(result);
+         end
+         else
+         begin
+           var t, second: uint32;
+           threeMask := ((sc and sd) or (sh and ss)) and ((sc and sh) or (sd and ss));
+           result := uint32(THoldemConstants.HANDTYPE_VALUE_TRIPS + (TopCardTable[threeMask] shl THoldemConstants.TOP_CARD_SHIFT));
+           t := ranks xor threeMask; // Only one bit set in three mask
+           second := TopCardTable[t];
+           result := result + uint32(TopCardTable[t] shl THoldemConstants.THIRD_CARD_SHIFT);
+           Exit(result);
+         end;
+       end;
+
+    else
+    begin
+      // possible quads, fullhouse, straight or flush, or two pair
+      fourMask := sh and sd and sc and ss;
+      if fourMask <> 0 then
+      begin
+        var tc := TopCardTable[fourMask];
+        result := uint32(THoldemConstants.HANDTYPE_VALUE_FOUR_OF_A_KIND
+                         + (tc shl THoldemConstants.TOP_CARD_SHIFT)
+                         + ( (TopCardTable[ranks xor (1 shl uint32(tc))]) shl THoldemConstants.SECOND_CARD_SHIFT));
+        Exit(result);
+      end;
+
+      // Technically, threeMask as defined below is really the set of bits which
+      // are set in three or four of the suits, but since we've already eliminated
+      // quads, this is OK
+      // Similarly, twoMask is really two_or_four_mask, but since we've
+      // already eliminated quads, we can use this shortcut
+      twoMask := ranks xor (sc xor sd xor sh xor ss);
+      if BitsTable[twoMask] <> nDups then
+      begin
+        // Must be some trips then, which really means there is a
+        // fullhouse since nDups >= 3
+        var tc, t: uint32;
+        threeMask := ((sc and sd) or (sh and ss)) and ((sc and sh) or (sd and ss));
+        result := THoldemConstants.HANDTYPE_VALUE_FULLHOUSE;
+        tc := TopCardTable[threeMask];
+        result := result + (tc shl THoldemConstants.TOP_CARD_SHIFT);
+        t := (twoMask or threeMask) xor (1 shl uint32(tc));
+        result := result + uint32(TopCardTable[t] shl THoldemConstants.SECOND_CARD_SHIFT);
+        Exit(result);
+      end;
+
+      if result <> 0 then
+        Exit(result) // flush and straight
+      else
+      begin
+        // must be two pair
+        var top, second: uint32;
+
+        result := THoldemConstants.HANDTYPE_VALUE_TWOPAIR;
+        top := TopCardTable[twoMask];
+        result := result + (top shl THoldemConstants.TOP_CARD_SHIFT);
+        second := TopCardTable[twoMask xor (1 shl uint32(top))];
+        result := result + (second shl THoldemConstants.SECOND_CARD_SHIFT);
+        result := result + uint32(
+          (TopCardTable[ranks xor (1 shl integer(top)) xor (1 shl integer(second))])
+            shl THoldemConstants.THIRD_CARD_SHIFT);
+        Exit(result);
+      end;
+
+    end;
 
   end;
+end;
+
+class function THand.EvaluateType(aMask: uint64; aCards: integer): THandTypes;
+begin
+  var isStraightOrFlush: THandTypes := THandTypes.HighCard;
+
+  var ss := uint32((aMask shr THoldemConstants.SPADE_OFFSET) and $1FFF);
+  var sc := uint32((aMask shr THoldemConstants.CLUB_OFFSET) and $1FFF);
+  var sd := uint32((aMask shr THoldemConstants.DIAMOND_OFFSET) and $1FFF);
+  var sh := uint32((aMask shr THoldemConstants.HEART_OFFSET) and $1FFF);
+
+  var ranks: uint32 := sc or sd or sh or ss;
+  var rankInfo: uint32 := BitsAndStrTable[ranks];
+  var nDups: uint32 := uint32(aCards - (rankInfo shr 2));
+
+  if (rankInfo and $01) <> 0 then
+  begin
+    if (rankInfo and $02) <> 0 then
+      isStraightOrFlush := THandTypes.Straight;
+
+    var t := uint32(BitsAndStrTable[ss] or BitsAndStrTable[sc] or BitsAndStrTable[sd] or BitsAndStrTable[sh]);
+
+    if (t and $01) <> 0 then
+    begin
+      if (t and $02) <> 0 then
+        Exit(THandTypes.StraightFlush)
+      else
+        isStraightOrFlush := THandTypes.Flush;
+    end;
+
+    if (integer(isStraightOrFlush) <> 0) and (nDups < 3) then
+      Exit(isStraightOrFlush);
+  end;
+
+  case nDups of
+    0: Exit(THandTypes.HighCard);
+    1: Exit(THandTypes.Pair);
+    2: begin
+         if (ranks xor (sc xor sd xor sh xor ss)) <> 0 then
+           Exit(THandTypes.TwoPair)
+         else
+           Exit(THandTypes.Trips);
+       end;
+    else
+    begin
+      if ((sc and sd) and (sh and ss)) <> 0 then
+        Exit(THandTypes.FourOfAKind)
+      else
+      if ((sc and sd) or (sh and ss)) and ((sc and sh) or (sd and ss)) <> 0 then
+        Exit(THandTypes.Fullhouse)
+      else
+      if integer(isStraightOrFlush) <> 0 then
+        Exit(isStraightOrFlush)
+      else
+        Exit(THandTypes.TwoPair);
+    end;
+  end;
+end;
+
+class function THand.EvaluateType(aMask: uint64): THandTypes;
+begin
+  {$IFDEF DEBUG}
+  var cards := THoldemConstants.BitCount(aMask);
+  if (cards <= 0) or (cards > 7) then
+    raise EArgumentException.Create('Invalid card count');
+  Exit(EvaluateType(aMask, cards));
+  {$ELSE}
+  Exit(EvaluateType(aMask, THoldemCount.BitCount(aMask))
+  {$ENDIF}
 end;
 
 function THand.GetPocketCards: string;
 begin
   result := fPocketCards;
+end;
+
+function THand.GetPocketMask: uint64;
+begin
+  result := ParseHand(PocketCards);
+end;
+
+function THand.IsGreaterThan(aHand: THand): boolean;
+begin
+  {$IFDEF DEBUG}
+  if not Assigned(aHand) then raise EArgumentException.Create('aHand is undefined');
+  {$ENDIF}
+
+  result := HandValue > aHand.HandValue;
+end;
+
+function THand.IsGreaterThanEqual(aHand: THand): boolean;
+begin
+  result := HandValue >= aHand.HandValue;
 end;
 
 class function THand.HandType(aHandValue: uint32): uint32;
@@ -427,9 +779,24 @@ begin
   result := THand.Parsehand(aMask, cards);
 end;
 
+procedure THand.SetBoard(const Value: string);
+begin
+  {$IFDEF DEBUG}
+  if (Value.Trim = '') or not (THand.ValidateHand(Value)) then raise EArgumentException.Create('Invalid board');
+  {$ENDIF}
+  fBoard := Value;
+
+  UpdateHandMask;
+end;
+
 procedure THand.SetPocketCards(const Value: string);
 begin
   fPocketCards := value;
+end;
+
+procedure THand.SetPocketMask(const Value: uint64);
+begin
+  PocketCards := MaskToString(Value);
 end;
 
 class function THand.ValidateHand(aHand: string): boolean;
