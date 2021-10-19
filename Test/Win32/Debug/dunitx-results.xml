@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<test-results name="C:\Users\yeahb\Projects\delphi-fast-holdem\Test\Win32\Debug\FastHoldemTest.exe" total="2" errors="0" failures="0" ignored="0" inconclusive="0" not-run="0" skipped="0" invalid="0" date="2021-10-19" time="110.435">
+  <culture-info current-culture="en" current-uiculture="en" />
+  <test-suite type="Assembly" name="FastHoldemTest.exe" executed="true" result="Success" success="True" time="110.435" asserts="0">
+    <results>
+        <test-suite type="Namespace" name="uHandEvaluatorTests" executed="true" result="Success" success="True" time="110.434" asserts="0" >
+          <results>
+              <test-suite type="Fixture" name="THandEvaluatorTest" executed="True" result="Success" success="True" time="110.434" >
+                <results>
+                  <test-case name="ValidateHandTest" executed="True" result="Success" success="True" time="0.000" asserts="0" />
+                  <test-case name="EvaludateTypeTest" executed="True" result="Success" success="True" time="110.431" asserts="0" />
+                </results>
+              </test-suite>
+          </results>
+        </test-suite>
+    </results>
+  </test-suite>
+</test-results>

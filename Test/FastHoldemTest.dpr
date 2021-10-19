@@ -13,7 +13,10 @@ uses
   DUnitX.Loggers.Xml.NUnit,
   {$ENDIF }
   DUnitX.TestFramework,
-  uTests in 'uTests.pas';
+  uHandEvaluatorTests in 'uHandEvaluatorTests.pas',
+  uHoldem in '..\Src\uHoldem.pas',
+  uHandTypes in '..\Src\uHandTypes.pas',
+  uHoldemConstants in '..\Src\uHoldemConstants.pas';
 
 {$IFNDEF TESTINSIGHT}
 var

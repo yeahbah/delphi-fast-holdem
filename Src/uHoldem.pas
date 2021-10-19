@@ -81,7 +81,19 @@ type
     ///    WriteLn('Hand: ' + Hand.DescriptionFromHandValue(handVal));
     ///  end;
     /// </code>
-    class function Evaluate(aCards: uint64; aNumberOfCards: integer): uint32;
+    class function Evaluate(aCards: uint64; aNumberOfCards: integer): uint32; overload; static;
+
+    /// <summary>
+    ///  Evaluates a mask (passed as a mask mask) and returns a mask value.
+    ///  A mask value can be compared against another mask value to
+    ///  determine which has the higher value.
+    /// </summary>
+    class function Evaluate(aCards: uint64): uint64; overload; static;
+
+    /// <summary>
+    ///  Evaluates a mask (passed as a string) and returns a mask value.
+    /// </summary>
+    class function Evaluate(aMask: string): uint32; overload; static;
 
     /// <summary>
     ///  Evaluates the card mask and returns the type of mask it is. This function
@@ -164,7 +176,7 @@ type
 implementation
 
 uses
-  SysUtils, uHoldemConstants, uYield;
+  SysUtils, uHoldemConstants;
 
 { THoldem }
 
@@ -509,7 +521,7 @@ begin
         var tc := TopCardTable[fourMask];
         result := uint32(THoldemConstants.HANDTYPE_VALUE_FOUR_OF_A_KIND
                          + (tc shl THoldemConstants.TOP_CARD_SHIFT)
-                         + ( (TopCardTable[ranks xor (1 shl uint32(tc))]) shl THoldemConstants.SECOND_CARD_SHIFT));
+                         + ( (TopCardTable[ranks xor (uint32(1) shl uint32(tc))]) shl THoldemConstants.SECOND_CARD_SHIFT));
         Exit(result);
       end;
 
@@ -528,7 +540,7 @@ begin
         result := THoldemConstants.HANDTYPE_VALUE_FULLHOUSE;
         tc := TopCardTable[threeMask];
         result := result + (tc shl THoldemConstants.TOP_CARD_SHIFT);
-        t := (twoMask or threeMask) xor (1 shl uint32(tc));
+        t := (twoMask or threeMask) xor (uint32(1) shl uint32(tc));
         result := result + uint32(TopCardTable[t] shl THoldemConstants.SECOND_CARD_SHIFT);
         Exit(result);
       end;
@@ -543,10 +555,10 @@ begin
         result := THoldemConstants.HANDTYPE_VALUE_TWOPAIR;
         top := TopCardTable[twoMask];
         result := result + (top shl THoldemConstants.TOP_CARD_SHIFT);
-        second := TopCardTable[twoMask xor (1 shl uint32(top))];
+        second := TopCardTable[twoMask xor (uint32(1) shl uint32(top))];
         result := result + (second shl THoldemConstants.SECOND_CARD_SHIFT);
         result := result + uint32(
-          (TopCardTable[ranks xor (1 shl integer(top)) xor (1 shl integer(second))])
+          (TopCardTable[ranks xor (uint32(1) shl integer(top)) xor (1 shl integer(second))])
             shl THoldemConstants.THIRD_CARD_SHIFT);
         Exit(result);
       end;
@@ -556,29 +568,34 @@ begin
   end;
 end;
 
+class function THand.Evaluate(aCards: uint64): uint64;
+begin
+  result := Evaluate(aCards, THoldemConstants.BitCount(aCards));
+end;
+
 class function THand.EvaluateType(aMask: uint64; aCards: integer): THandTypes;
 begin
   var isStraightOrFlush: THandTypes := THandTypes.HighCard;
 
-  var ss := uint32((aMask shr THoldemConstants.SPADE_OFFSET) and $1FFF);
-  var sc := uint32((aMask shr THoldemConstants.CLUB_OFFSET) and $1FFF);
-  var sd := uint32((aMask shr THoldemConstants.DIAMOND_OFFSET) and $1FFF);
-  var sh := uint32((aMask shr THoldemConstants.HEART_OFFSET) and $1FFF);
+  var ss := uint32((aMask shr THoldemConstants.SPADE_OFFSET) and uint64($1FFF));
+  var sc := uint32((aMask shr THoldemConstants.CLUB_OFFSET) and uint64($1FFF));
+  var sd := uint32((aMask shr THoldemConstants.DIAMOND_OFFSET) and uint64($1FFF));
+  var sh := uint32((aMask shr THoldemConstants.HEART_OFFSET) and uint64($1FFF));
 
   var ranks: uint32 := sc or sd or sh or ss;
   var rankInfo: uint32 := BitsAndStrTable[ranks];
   var nDups: uint32 := uint32(aCards - (rankInfo shr 2));
 
-  if (rankInfo and $01) <> 0 then
+  if (rankInfo and uint32($01)) <> 0 then
   begin
-    if (rankInfo and $02) <> 0 then
+    if (rankInfo and uint32($02)) <> 0 then
       isStraightOrFlush := THandTypes.Straight;
 
     var t := uint32(BitsAndStrTable[ss] or BitsAndStrTable[sc] or BitsAndStrTable[sd] or BitsAndStrTable[sh]);
 
-    if (t and $01) <> 0 then
+    if (t and uint32($01)) <> 0 then
     begin
-      if (t and $02) <> 0 then
+      if (t and uint32($02)) <> 0 then
         Exit(THandTypes.StraightFlush)
       else
         isStraightOrFlush := THandTypes.Flush;
@@ -664,14 +681,14 @@ begin
   {$ENDIF}
 
   // skip whitespaces
-  while (aIndex < aCards.Length) and (aCards[aIndex] = ' ') do
+  while (aIndex <= aCards.Length) and (aCards[aIndex] = ' ') do
     Inc(aIndex);
 
-  if aIndex >= aCards.Length then
+  if aIndex > aCards.Length then
     exit(-1);
 
   // parse cards
-  if aIndex < aCards.Length then
+  if aIndex <= aCards.Length then
   begin
     case aCards[aIndex] of
       '1': try
@@ -707,9 +724,8 @@ begin
     Exit(-2)
   end;
 
-  if aIndex < aCards.Length then
+  if aIndex <= aCards.Length then
   begin
-    Inc(aIndex);
     case aCards[aIndex] of
       'H', 'h': suit := THoldemConstants.Hearts;
       'D', 'd': suit := THoldemConstants.Diamonds;
@@ -717,6 +733,7 @@ begin
       'S', 's': suit := THoldemConstants.Spades;
       else Exit(-2);
     end;
+    Inc(aIndex);
   end
   else
   begin
@@ -760,11 +777,11 @@ begin
   // parse the mask
   cards := 0;
 
-  var index := 0;
+  var index := 1;
   var card := THand.NextCard(aHand, index);
   while card >= 0 do
   begin
-    handMask := handMask or (1 shl card);
+    handMask := handMask or (uint64(1) shl card);
     Inc(cards);
 
     card := THand.NextCard(aHand, index);
@@ -807,17 +824,17 @@ begin
   result := false;
 
   try
-    var index := 0;
+    var index := 1;
     var handMask: uint64 := 0;
     var cards := 0;
 
     var card := NextCard(aHand, index);
     while card >= 0 do
     begin
-      if (handMask and (1 shl card)) <> 0 then
+      if (handMask and (uint64(1) shl card)) <> 0 then
         Exit(false);
 
-      handMask := handMask or (1 shl card);
+      handMask := handMask or (uint64(1) shl card);
       Inc(cards);
 
       card := NextCard(aHand, index);
@@ -838,6 +855,11 @@ begin
   {$ENDIF}
 
   result := THand.ValidateHand(aPocket +' '+ aBoard);
+end;
+
+class function THand.Evaluate(aMask: string): uint32;
+begin
+  result := Evaluate(THand.ParseHand(aMask));
 end;
 
 end.
