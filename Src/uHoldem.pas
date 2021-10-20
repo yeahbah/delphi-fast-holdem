@@ -3,7 +3,7 @@ unit uHoldem;
 interface
 
 uses
-  uHandTypes, System.Generics.Collections;
+  uHandTypes, SysUtils;
 
 type
   THand = class(TInterfacedObject, IComparable)
@@ -145,6 +145,16 @@ type
     class function HandTypeValue(aHandType: THandTypes): uint32; static;
 
     /// <summary>
+    ///  Enables a foreach command to enumerate all possible ncard hands
+    /// </summary>
+    /// <param name="aNumberOfCards">Number of cards</param>
+    /// <param name="aDo">The action to take for the current hand</param>
+    class procedure ForEachHand(aNumberOfCards: integer; aDo: TProc<uint64>); static;
+
+    class procedure ForEachRandomHand(aNumberOfCards: integer; aDuration: double; aDo: TProc<uint64>); overload; static;
+    class procedure ForEachRandomHand(aShared, aDead: uint64; aNumberOfCards: integer; aDuration: double; aDo: TProc<uint64>); overload; static;
+
+    /// <summary>
     ///  Test for equality
     /// </summary>
     function Equals(Obj: TObject): boolean; override;
@@ -165,7 +175,6 @@ type
 
     function ToString: string; override;
 
-
     property PocketCards: string read GetPocketCards write SetPocketCards;
     property HandValue: uint32 read fHandVal;
     property Board: string read fBoard write SetBoard;
@@ -176,7 +185,7 @@ type
 implementation
 
 uses
-  SysUtils, uHoldemConstants;
+  uHoldemConstants;
 
 { THoldem }
 
@@ -234,6 +243,165 @@ begin
   result := HandValue <= aHand.HandValue;
 end;
 
+class procedure THand.ForEachHand(aNumberOfCards: integer;
+  aDo: TProc<uint64>);
+begin
+  var a, b, c, d, e, f, g: integer;
+  var card1, n2, n3, n4, n5, n6: uint64;
+
+  {$IFDEF DEBUG}
+  if (aNumberOfCards < 0) or (aNumberOfCards > 7) then raise EArgumentException.Create('Invalid number of cards');
+  {$ENDIF}
+
+  case aNumberOfCards of
+    7: begin
+         for a := 0 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 7 do
+         begin
+            card1 := CardMasksTable[a];
+            for b := a + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 6 do
+            begin
+              n2 := card1 or CardMasksTable[b];
+              for c := b + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 5 do
+              begin
+                n3 := n2 or CardMasksTable[c];
+                for d := c + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 4 do
+                begin
+                  n4 := n3 or CardMasksTable[d];
+                  for e := d + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 3 do
+                  begin
+                    n5 := n4 or CardMasksTable[e];
+                    for f := e + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 2 do
+                    begin
+                      n6 := n5 or CardMasksTable[f];
+                      for g := f + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 1 do
+                      begin
+                        aDo(n6 or CardMasksTable[g]);
+                      end;
+                    end;
+
+                  end;
+
+                end;
+
+              end;
+
+            end;
+
+         end;
+       end;
+
+    6: begin
+         for a := 0 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 6 do
+         begin
+            card1 := CardMasksTable[a];
+            for b := a + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 5 do
+            begin
+              n2 := card1 or CardMasksTable[b];
+              for c := b + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 4 do
+              begin
+                n3 := n2 or CardMasksTable[c];
+                for d := c + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 3 do
+                begin
+                  n4 := n3 or CardMasksTable[d];
+                  for e := d + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 2 do
+                  begin
+                    n5 := n4 or CardMasksTable[e];
+                    for f := e + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 1 do
+                    begin
+                      aDo(n5 or CardMasksTable[f]);
+                    end;
+                  end;
+                end;
+              end;
+            end;
+         end;
+       end;
+
+    5: begin
+         for a := 0 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 5 do
+         begin
+            card1 := CardMasksTable[a];
+            for b := a + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 4 do
+            begin
+              n2 := card1 or CardMasksTable[b];
+              for c := b + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 3 do
+              begin
+                n3 := n2 or CardMasksTable[c];
+                for d := c + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 2 do
+                begin
+                  n4 := n3 or CardMasksTable[d];
+                  for e := d + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 1 do
+                  begin
+                    aDo(n4 or CardMasksTable[e]);
+                  end;
+                end;
+              end;
+            end;
+         end;
+       end;
+
+    4: begin
+         for a := 0 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 4 do
+         begin
+            card1 := CardMasksTable[a];
+            for b := a + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 3 do
+            begin
+              n2 := card1 or CardMasksTable[b];
+              for c := b + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 2 do
+              begin
+                n3 := n2 or CardMasksTable[c];
+                for d := c + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 1 do
+                begin
+                  aDo(n3 or CardMasksTable[d]);
+                end;
+              end;
+            end;
+         end;
+       end;
+
+    3: begin
+         for a := 0 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 3 do
+         begin
+            card1 := CardMasksTable[a];
+            for b := a + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 2 do
+            begin
+              n2 := card1 or CardMasksTable[b];
+              for c := b + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 1 do
+              begin
+                aDo(n2 or CardMasksTable[c]);
+              end;
+            end;
+         end;
+       end;
+
+    2: begin
+
+       end;
+
+    1: begin
+
+       end;
+
+    else
+    begin
+      Assert(false);
+      aDo(0);
+    end;
+  end;
+end;
+
+class procedure THand.ForEachRandomHand(aShared, aDead: uint64;
+  aNumberOfCards: integer; aDuration: double; aDo: TProc<uint64>);
+begin
+
+end;
+
+class procedure THand.ForEachRandomHand(aNumberOfCards: integer;
+  aDuration: double; aDo: TProc<uint64>);
+begin
+
+end;
+
 class function THand.Mask(aIndex: integer): uint64;
 begin
   result := CardMasksTable[aIndex];
@@ -245,9 +413,10 @@ begin
   try
     var count := 0;
 
+    var one: uint64 := 1;
     for var i := 51 downto 0 do
     begin
-      if ((1 shl i) and aMask) <> 0 then
+      if ((one shl i) and aMask) <> 0 then
       begin
         var card := CardTable[i];
         if count <> 0 then
@@ -750,7 +919,7 @@ begin
   if aCard.Trim() = '' then raise EArgumentException.Create('aCard is not defined');
   {$ENDIF}
 
-  var index := 0;
+  var index := 1;
   result := NextCard(aCard, index);
 end;
 
