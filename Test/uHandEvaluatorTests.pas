@@ -21,12 +21,13 @@ type
     // Tests the parser and the ToString for masks
     procedure TestParserWith5Cards();
     procedure TestParserWith7Cards();
+    procedure TestRandomHandProcessors();
   end;
 
 implementation
 
 uses
-  uHandTypes, uHoldemConstants;
+  uHandTypes, uHoldemConstants, SysUtils;
 
 { THandEvaluatorTest }
 
@@ -112,7 +113,29 @@ end;
 
 procedure THandEvaluatorTest.TestParserWith7Cards;
 begin
-  //THand.ForEachRandomHand(7, 20.0)
+  THand.ForEachRandomHand(7, 2.0,
+    procedure (aHandMask: uint64)
+    begin
+      var hand := THand.MaskToString(aHandMask);
+      var testMask := THand.ParseHand(hand);
+      Assert.IsTrue(THoldemConstants.BitCount(testMask) = 7, 'Parsed results should be 7 cards');
+      Assert.IsTrue(aHandMask = testMask, 'Make sure that MaskToString() and ParseHand() return consistent results');
+    end);
+end;
+
+procedure THandEvaluatorTest.TestRandomHandProcessors;
+begin
+  var freq: uint64;
+  var count := 0;
+
+  THand.ForEachRandomHand(7, 20000,
+    procedure (aMask: uint64)
+    begin
+      Inc(count);
+    end);
+
+  Assert.IsTrue(count = 20000, 'Should match the requested number of trials');
+
 end;
 
 procedure THandEvaluatorTest.ValidateHandTest;

@@ -151,8 +151,25 @@ type
     /// <param name="aDo">The action to take for the current hand</param>
     class procedure ForEachHand(aNumberOfCards: integer; aDo: TProc<uint64>); static;
 
+    /// <summary>
+    ///  Iterates through random hands that meets the specified requirements until the specified
+    ///  time duration has elapse.
+    /// </summary>
     class procedure ForEachRandomHand(aNumberOfCards: integer; aDuration: double; aDo: TProc<uint64>); overload; static;
     class procedure ForEachRandomHand(aShared, aDead: uint64; aNumberOfCards: integer; aDuration: double; aDo: TProc<uint64>); overload; static;
+
+    /// <summary>
+    ///  Iterates through random hands with aNumberOfCards number of cards. This method
+    ///  will go through a number of masks specified in trials. Masks can be repeated
+    /// </summary>
+    class procedure ForEachRandomHand(aNumberOfCards, aNumTrials: integer; aDo: TProc<uint64>); overload; static;
+    class procedure ForEachRandomHand(aShared, aDead: uint64; aNumberOfCards, aNumTrials: integer; aDo: TProc<uint64>); overload; static;
+
+    /// <summary>
+    ///  Returns a random mask with the specified number of cards and constrained
+    ///  to not contain any of the passed dead cards
+    /// </summary>
+    class function RandomHand(aShared, aDead: uint64; aNumberOfCards: integer): uint64; static;
 
     /// <summary>
     ///  Test for equality
@@ -185,7 +202,7 @@ type
 implementation
 
 uses
-  uHoldemConstants;
+  uHoldemConstants, Math, DateUtils;
 
 { THoldem }
 
@@ -393,13 +410,21 @@ end;
 class procedure THand.ForEachRandomHand(aShared, aDead: uint64;
   aNumberOfCards: integer; aDuration: double; aDo: TProc<uint64>);
 begin
+  var start := Now;
+  {$IFDEF DEBUG}
+  if (aNumberOfCards < 0) or (aNumberOfCards > 7) then raise EArgumentException.Create('Invalid number of cards');
+  if (aDuration < 0) then EArgumentException.Create('Invalid duration');
+  {$ENDIF}
 
+  repeat
+    aDo(RandomHand(aShared, aDead, aNumberOfCards));
+  until SecondsBetween(start, Now) >= aDuration;
 end;
 
 class procedure THand.ForEachRandomHand(aNumberOfCards: integer;
   aDuration: double; aDo: TProc<uint64>);
 begin
-
+  THand.ForEachRandomHand(0, 0, aNumberOfCards, aDuration, aDo);
 end;
 
 class function THand.Mask(aIndex: integer): uint64;
@@ -753,7 +778,7 @@ begin
 
   var ranks: uint32 := sc or sd or sh or ss;
   var rankInfo: uint32 := BitsAndStrTable[ranks];
-  var nDups: uint32 := uint32(aCards - (rankInfo shr 2));
+  var nDups: uint32 := uint32(aCards) - (rankInfo shr 2);
 
   if (rankInfo and uint32($01)) <> 0 then
   begin
@@ -841,9 +866,10 @@ begin
 end;
 
 class function THand.NextCard(aCards: string; var aIndex: integer): integer;
+var
+  rank, suit: integer;
 begin
-  var rank := 0;
-  var suit := 0;
+  rank := 0;
 
   {$IFDEF DEBUG}
   if aCards = '' then raise EArgumentException.Create('aCards cannot be empty');
@@ -928,6 +954,25 @@ begin
   result := THand.ParseHand(aPocket +' '+ aBoard, cards);
 end;
 
+class function THand.RandomHand(aShared, aDead: uint64;
+  aNumberOfCards: integer): uint64;
+begin
+  var mask := aShared;
+  var card: uint64;
+
+  var count := aNumberOfCards - THoldemConstants.BitCount(aShared);
+
+  var one: uint64 := 1;
+  for var i := 0 to count - 1 do
+  begin
+    repeat
+      card := one shl RandomRange(1, 52);
+    until ((aDead or mask) and card) <= 0;
+    mask := mask or card;
+  end;
+  result := mask or aShared;
+end;
+
 class function THand.ParseHand(aHand: string; var cards: integer): uint64;
 begin
   var handMask: uint64 := 0;
@@ -990,8 +1035,6 @@ begin
   if aHand = '' then
     exit(false);
 
-  result := false;
-
   try
     var index := 1;
     var handMask: uint64 := 0;
@@ -1030,5 +1073,29 @@ class function THand.Evaluate(aMask: string): uint32;
 begin
   result := Evaluate(THand.ParseHand(aMask));
 end;
+
+class procedure THand.ForEachRandomHand(aNumberOfCards, aNumTrials: integer; aDo: TProc<uint64>);
+begin
+  ForEachRandomHand(0, 0, aNumberOfCards, aNumTrials, aDo);
+end;
+
+class procedure THand.ForEachRandomHand(aShared, aDead: uint64; aNumberOfCards,
+  aNumTrials: integer; aDo: TProc<uint64>);
+begin
+  {$IFDEF DEBUG}
+  if (aNumberOfCards < 0) or (aNumberOfCards > 7) then raise EArgumentException.Create('Invalid number of cards');
+  {$ENDIF}
+
+  var deadMask := aDead or aShared;
+  var cardCount := aNumberOfCards - THoldemConstants.BitCount(aShared);
+
+  for var i := 0 to aNumTrials - 1 do
+  begin
+    aDo(RandomHand(aShared, aDead, cardCount) or aShared);
+  end;
+end;
+
+initialization
+  Randomize;
 
 end.
