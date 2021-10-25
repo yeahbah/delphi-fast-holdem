@@ -392,11 +392,17 @@ begin
        end;
 
     2: begin
-
+         for a := 0 to Length(TwoCardMaskTable) - 1 do
+         begin
+           aDo(TwoCardMaskTable[a]);
+         end;
        end;
 
     1: begin
-
+         for a := 0 to Length(CardMasksTable) - 1 do
+         begin
+           aDo(CardMasksTable[a]);
+         end;
        end;
 
     else

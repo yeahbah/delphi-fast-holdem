@@ -22,6 +22,9 @@ type
     procedure TestParserWith5Cards();
     procedure TestParserWith7Cards();
     procedure TestRandomHandProcessors();
+
+    procedure TestSuitConsistency();
+    procedure TestBasicIterators();
   end;
 
 implementation
@@ -91,6 +94,59 @@ begin
   Assert.IsTrue(133784560 = count, 'Count Returned Incorrect Value');
 end;
 
+procedure THandEvaluatorTest.TestBasicIterators;
+var
+  count: uint64;
+begin
+  count := 0;
+  THand.ForEachHand(1,
+    procedure (aHand: uint64)
+    begin
+      Inc(count);
+    end);
+  Assert.IsTrue(count = 52, 'Check one card hand count');
+
+  count := 0;
+  THand.ForEachHand(2,
+    procedure (aHand: uint64)
+    begin
+      Inc(count);
+    end);
+  Assert.IsTrue(count = 1326, 'Check two card hand count');
+
+  count := 0;
+  THand.ForEachHand(3,
+    procedure (aHand: uint64)
+    begin
+      Inc(count);
+    end);
+  Assert.IsTrue(count = 22100, 'Check three card hand count');
+
+  count := 0;
+  THand.ForEachHand(4,
+    procedure (aHand: uint64)
+    begin
+      Inc(count);
+    end);
+  Assert.IsTrue(count = 270725, 'Check four card hand count');
+
+  count := 0;
+  THand.ForEachHand(5,
+    procedure (aHand: uint64)
+    begin
+      Inc(count);
+    end);
+  Assert.IsTrue(count = 2598960, 'Check five card hand count');
+
+  count := 0;
+  THand.ForEachHand(6,
+    procedure (aHand: uint64)
+    begin
+      Inc(count);
+    end);
+  Assert.IsTrue(count = 20358520, 'Check six card hand count');
+end;
+
 procedure THandEvaluatorTest.TestParserWith5Cards;
 begin
   for var i := 0 to 51 do
@@ -136,6 +192,25 @@ begin
 
   Assert.IsTrue(count = 20000, 'Should match the requested number of trials');
 
+end;
+
+procedure THandEvaluatorTest.TestSuitConsistency;
+begin
+  var mask := THand.ParseHand('Ac Tc 2c 3c 4c');
+  var sc := uint32(mask shr THoldemConstants.CLUB_OFFSET) and $1FFF;
+  Assert.IsTrue(THoldemConstants.BitCount(sc) = 5, 'Club consistency check');
+
+  mask := THand.ParseHand('Ad Td 2d 3d 4d');
+  var sd := (mask shr THoldemConstants.DIAMOND_OFFSET) AND $1FFF;
+  Assert.IsTrue(THoldemConstants.BitCount(sd) = 5, 'Diamond consistency check');
+
+  mask := THand.ParseHand('Ah Th 2h 3h 4h');
+  var sh := (mask shr THoldemConstants.HEART_OFFSET) AND $1FFF;
+  Assert.IsTrue(THoldemConstants.BitCount(sh) = 5, 'Heart consistency check');
+
+  mask := THand.ParseHand('As Ts 2s 3s 4s');
+  var ss := (mask shr THoldemConstants.SPADE_OFFSET) and $1FFF;
+  Assert.IsTrue(THoldemConstants.BitCount(ss) = 5, 'Spade consistency check');
 end;
 
 procedure THandEvaluatorTest.ValidateHandTest;
