@@ -149,7 +149,8 @@ type
     /// </summary>
     /// <param name="aNumberOfCards">Number of cards</param>
     /// <param name="aDo">The action to take for the current hand</param>
-    class procedure ForEachHand(aNumberOfCards: integer; aDo: TProc<uint64>); static;
+    class procedure ForEachHand(aNumberOfCards: integer; aDo: TProc<uint64>); overload; static;
+    class procedure ForEachHand(aShared, aDead: uint64; aNumberOfCards: integer; aDo: TProc<uint64>); overload; static;
 
     /// <summary>
     ///  Iterates through random hands that meets the specified requirements until the specified
@@ -189,6 +190,29 @@ type
     function IsLessThanEqual(aHand: THand): boolean; virtual;
 
     procedure UpdateHandMask;
+
+    /// <summary>
+    ///  Create a hand mask with the cards that will improve the specified players mask
+    ///  against a list of opponents or if no opponents are in the list, just the cards that improve the
+    ///  players current hand
+    ///
+    ///  Please note that this only looks at single cards that improve the mask and will not specifically
+    ///  look at runner-runner possibilities
+    /// </summary>
+    /// <param name="aPlayer">Players pocket cards</param>
+    /// <param name="aBoard">The board (must contain either 3 or 4 cards) </param>
+    /// <param name="aOpponents">A list of zero or more opponent pocket cards</param>
+    /// <returns>A mask of all the cards that improve the mask</returns>
+    class function OutsMask(aPlayer: uint64; aBoard: uint64; aOpponents: array of uint64): uint64; static;
+
+    /// <summary>
+    ///  Returns the number of outs possible with the next card
+    /// </summary>
+    /// <param name="aPlayer">Players pocket cards</param>
+    /// <param name="aBoard">The board (must contain either 3 or 4 cards) </param>
+    /// <param name="aOpponents">A list of zero or more opponent pocket cards</param>
+    /// <returns>The count of the number of single cards that improve the current mask.</returns>
+    class function Outs(aPlayer: uint64; aBoard: uint64; aOpponents: array of uint64): integer; static;
 
     function ToString: string; override;
 
@@ -945,6 +969,86 @@ begin
 end;
 
 
+class function THand.Outs(aPlayer, aBoard: uint64;
+  aOpponents: array of uint64): integer;
+begin
+  result := THoldemConstants.BitCount(THand.Outs(aPlayer, aBoard, aOpponents));
+end;
+
+class function THand.OutsMask(aPlayer, aBoard: uint64;
+  aOpponents: array of uint64): uint64;
+begin
+  var retVal := 0;
+  var dead: uint64 := 0;
+  var nCards := THoldemConstants.BitCount(aPlayer or aBoard);
+
+  {$IFDEF DEBUG}
+  if (nCards <> 5) and (nCards <> 6) then raise EArgumentException.Create('Outs only make sense after the flop and before the river.');
+  {$ENDIF}
+
+  var opponents := aOpponents; // aOpponents could not be used in the annonymous method
+
+  if Length(opponents) > 0 then
+  begin
+    for var opp in opponents do
+    begin
+      Assert(THoldemConstants.BitCount(opp) = 2);
+      dead := dead or opp;
+    end;
+
+    var playerOrigHandVal := THand.Evaluate(aPlayer or aBoard, nCards);
+    var playerOrigHandType := THand.EvaluateType(playerOrigHandVal);
+    var playerOrigTopCard := THand.TopCard(playerOrigHandVal);
+
+    THand.ForEachHand(0, dead or aBoard or aPlayer, 1,
+      procedure (card: uint64)
+      begin
+        var winFlag := true;
+        var playerHandVal := THand.Evaluate(aPlayer or aBoard or card, nCards + 1);
+        var playerNewHandType := THand.HandType(playerHandVal);
+        var playerNewTopCard := THand.TopCard(playerHandVal);
+        for var oppMask in opponents do
+        begin
+          var oppHandVal := THand.Evaluate(oppMask or aBoard or card, nCards + 1);
+          winFlag := (oppHandVal < playerHandVal)
+            and ( (playerNewHandType > integer(playerOrigHandType))
+                  or ( (playerNewHandType = integer(playerOrigHandType))
+                  and (playerNewTopCard > playerOrigTopCard) )
+                );
+
+          if not winFlag then
+            break;
+        end;
+
+        if winFlag then
+          retVal := retVal or card;
+      end);
+
+  end
+  else
+  begin
+
+    var playerOrigHandVal := THand.Evaluate(aPlayer or aBoard, nCards + 1);
+    var playerOrigHandType := THand.HandType(playerOrigHandVal);
+    var playerOrigTopCard := THand.TopCard(playerOrigHandVal);
+
+    // look ahead one card
+    THand.ForEachHand(0, dead or aBoard or aPlayer, 1,
+      procedure (card: uint64)
+      begin
+        var playerNewHandVal := THand.Evaluate(aPlayer or aBoard or card, nCards + 1);
+        var playerNewHandType := THand.HandType(playerNewHandVal);
+        var playerNewTopCard := THand.TopCard(playerNewHandVal);
+
+        if (playerNewHandType > playerOrigHandType) or ((playerNewHandType = playerOrigHandType) and (playerNewTopCard > playerOrigTopCard)) then
+          retVal := retVal or card;
+      end);
+
+  end;
+
+  result := retVal;
+end;
+
 class function THand.ParseCard(aCard: string): integer;
 begin
   {$IFDEF DEBUG}
@@ -1083,6 +1187,263 @@ end;
 class procedure THand.ForEachRandomHand(aNumberOfCards, aNumTrials: integer; aDo: TProc<uint64>);
 begin
   ForEachRandomHand(0, 0, aNumberOfCards, aNumTrials, aDo);
+end;
+
+class procedure THand.ForEachHand(aShared, aDead: uint64;
+  aNumberOfCards: integer; aDo: TProc<uint64>);
+begin
+  aDead := aDead or aShared;
+  case aNumberOfCards - THoldemConstants.BitCount(aShared) of
+    7: begin
+         for var a := 0 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 7 do
+         begin
+           var _card1 := CardMasksTable[a];
+           if (aDead and _card1) <> 0 then
+             continue;
+
+           for var b := a + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 6 do
+           begin
+             var _card2 := CardMasksTable[b];
+             if (aDead and _card2 <> 0) then
+               continue;
+
+             var _n2 := _card1 or _card2;
+             for var c := b + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 5 do
+             begin
+               var _card3 := CardMasksTable[c];
+               if (aDead and _card3) <> 0 then
+                 continue;
+
+               var _n3 := _n2 or _card3;
+               for var d := c + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 4 do
+               begin
+                 var _card4 := CardMasksTable[d];
+                 if (aDead and _card4) <> 0 then
+                   continue;
+
+                 var _n4 := _n3 or _card4;
+                 for var e := d + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 3 do
+                 begin
+                   var _card5 := CardMasksTable[e];
+                   if (aDead and _card5) <> 0 then
+                     continue;
+
+                   var _n5 := _n4 or _card5;
+                   for var f := e + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 2 do
+                   begin
+                     var _card6 := CardMasksTable[f];
+                     if aDead and _card6 <> 0 then
+                       continue;
+
+                     var _n6 := _n5 or _card6;
+                     for var g := f + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 1 do
+                     begin
+                       var _card7 := CardMasksTable[g];
+                       if aDead and _card7 <> 0 then
+                         continue;
+
+                       aDo(_n6 or _card7 or aShared);
+
+                     end;
+                   end;
+                 end;
+               end;
+             end;
+           end;
+         end;
+       end;
+
+    6: begin
+         for var a := 0 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 6 do
+         begin
+           var _card1 := CardMasksTable[a];
+           if (aDead and _card1) <> 0 then
+             continue;
+
+           for var b := a + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 5 do
+           begin
+             var _card2 := CardMasksTable[b];
+             if (aDead and _card2 <> 0) then
+               continue;
+
+             var _n2 := _card1 or _card2;
+             for var c := b + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 4 do
+             begin
+               var _card3 := CardMasksTable[c];
+               if (aDead and _card3) <> 0 then
+                 continue;
+
+               var _n3 := _n2 or _card3;
+               for var d := c + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 3 do
+               begin
+                 var _card4 := CardMasksTable[d];
+                 if (aDead and _card4) <> 0 then
+                   continue;
+
+                 var _n4 := _n3 or _card4;
+                 for var e := d + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 2 do
+                 begin
+                   var _card5 := CardMasksTable[e];
+                   if (aDead and _card5) <> 0 then
+                     continue;
+
+                   var _n5 := _n4 or _card5;
+                   for var f := e + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 1 do
+                   begin
+                     var _card6 := CardMasksTable[f];
+                     if aDead and _card6 <> 0 then
+                       continue;
+
+                     aDo(_n5 or _card6 or aShared);
+
+                   end;
+                 end;
+               end;
+             end;
+           end;
+         end;
+       end;
+
+    5: begin
+         for var a := 0 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 5 do
+         begin
+           var _card1 := CardMasksTable[a];
+           if (aDead and _card1) <> 0 then
+             continue;
+
+           for var b := a + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 4 do
+           begin
+             var _card2 := CardMasksTable[b];
+             if (aDead and _card2 <> 0) then
+               continue;
+
+             var _n2 := _card1 or _card2;
+             for var c := b + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 3 do
+             begin
+               var _card3 := CardMasksTable[c];
+               if (aDead and _card3) <> 0 then
+                 continue;
+
+               var _n3 := _n2 or _card3;
+               for var d := c + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 2 do
+               begin
+                 var _card4 := CardMasksTable[d];
+                 if (aDead and _card4) <> 0 then
+                   continue;
+
+                 var _n4 := _n3 or _card4;
+                 for var e := d + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 1
+                 do
+                 begin
+                   var _card5 := CardMasksTable[e];
+                   if (aDead and _card5) <> 0 then
+                     continue;
+
+                   aDo(_n4 or _card5 or aShared);
+
+                 end;
+               end;
+             end;
+           end;
+         end;
+       end;
+
+    4: begin
+         for var a := 0 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 4 do
+         begin
+           var _card1 := CardMasksTable[a];
+           if (aDead and _card1) <> 0 then
+             continue;
+
+           for var b := a + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 3 do
+           begin
+             var _card2 := CardMasksTable[b];
+             if (aDead and _card2 <> 0) then
+               continue;
+
+             var _n2 := _card1 or _card2;
+             for var c := b + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 2 do
+             begin
+               var _card3 := CardMasksTable[c];
+               if (aDead and _card3) <> 0 then
+                 continue;
+
+               var _n3 := _n2 or _card3;
+               for var d := c + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 1 do
+               begin
+                 var _card4 := CardMasksTable[d];
+                 if (aDead and _card4) <> 0 then
+                   continue;
+
+                 aDo(_n3 or _card4 or aShared);
+
+               end;
+             end;
+           end;
+         end;
+       end;
+
+    3: begin
+         for var a := 0 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 3 do
+         begin
+           var _card1 := CardMasksTable[a];
+           if (aDead and _card1) <> 0 then
+             continue;
+
+           for var b := a + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 2 do
+           begin
+             var _card2 := CardMasksTable[b];
+             if (aDead and _card2 <> 0) then
+               continue;
+
+             var _n2 := _card1 or _card2;
+             for var c := b + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 1 do
+             begin
+               var _card3 := CardMasksTable[c];
+               if (aDead and _card3) <> 0 then
+                 continue;
+
+               aDo(_n2 or _card3 or aShared);
+             end;
+           end;
+         end;
+       end;
+
+    2: begin
+         for var a := 0 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 2 do
+         begin
+           var _card1 := CardMasksTable[a];
+           if (aDead and _card1) <> 0 then
+             continue;
+
+           for var b := a + 1 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 1 do
+           begin
+             var _card2 := CardMasksTable[b];
+             if (aDead and _card2 <> 0) then
+               continue;
+
+             aDo(_card1 or _card2 or aShared);
+           end;
+         end;
+       end;
+
+    1: begin
+         for var a := 0 to THoldemConstants.CARD_MASKS_TABLE_SIZE - 1 do
+         begin
+           var _card1 := CardMasksTable[a];
+           if (aDead and _card1) <> 0 then
+             continue;
+
+           aDo(_card1 or aShared);
+         end;
+       end;
+
+    0: aDo(aShared);
+
+    else
+      aDo(0);
+
+  end;
 end;
 
 class procedure THand.ForEachRandomHand(aShared, aDead: uint64; aNumberOfCards,
