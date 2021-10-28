@@ -26,6 +26,9 @@ type
     procedure TestSuitConsistency();
     procedure TestBasicIterators();
     procedure TestAnalysis();
+
+    procedure TestEquality();
+    procedure TestInstanceComparison();
   end;
 
 implementation
@@ -164,6 +167,38 @@ begin
       Inc(count);
     end);
   Assert.IsTrue(count = 20358520, 'Check six card hand count');
+end;
+
+procedure THandEvaluatorTest.TestEquality;
+begin
+  THand.ForEachHand(2,
+    procedure (aPocketMask: uint64)
+    begin
+      var pocket := THand.MaskToString(aPocketMask);
+      THand.ForEachRandomHand(0, aPocketMask, 5, 2,
+        procedure (aBoardMask: uint64)
+        begin
+          var board := THand.MaskToString(aBoardMask);
+          var hand1 := THand.Create(pocket, board);
+          var hand2 := THand.Create;
+          hand2.PocketMask := aPocketMask;
+          hand2.BoardMask := aBoardMask;
+
+          Assert.IsTrue(hand1.Equals(hand2), 'Equality test failed');
+        end);
+    end);
+end;
+
+procedure THandEvaluatorTest.TestInstanceComparison;
+begin
+  var board := '2d kh qh 3h qc';
+  var hand1 := THand.Create('ad kd', board);
+  var hand2 := THand.Create('2h 3d', board);
+
+  Assert.IsTrue(hand1.IsGreaterThan(hand2));
+  Assert.IsTrue(hand1.IsGreaterThanEqual(hand2));
+  Assert.IsTrue(hand2.IsLessThanEqual(hand1));
+  Assert.IsFalse(hand1.Equals(hand2));
 end;
 
 procedure THandEvaluatorTest.TestParserWith5Cards;

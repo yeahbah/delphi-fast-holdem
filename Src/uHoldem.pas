@@ -35,6 +35,9 @@ type
   private
     function GetPocketMask: uint64;
     procedure SetPocketMask(const Value: uint64);
+    function GetBoardMask: uint64;
+    procedure SetBoardMask(const Value: uint64);
+    function GetBoard: string;
   public
     constructor Create; overload;
     constructor Create(aPocket, aBoard: string); overload;
@@ -218,9 +221,10 @@ type
 
     property PocketCards: string read GetPocketCards write SetPocketCards;
     property HandValue: uint32 read fHandVal;
-    property Board: string read fBoard write SetBoard;
+    property Board: string read GetBoard write SetBoard;
     property MaskValue: uint64 read fHandMask;
     property PocketMask: uint64 read GetPocketMask write SetPocketMask;
+    property BoardMask: uint64 read GetBoardMask write SetBoardMask;
   end;
 
 implementation
@@ -251,7 +255,8 @@ begin
   if (aPocket = '') then raise EArgumentException.Create('aPocket cannot be empty');
   if (aBoard = '') then raise EArgumentException.Create('aBoard cannot be empty');
 
-  fBoard := aBoard;
+  PocketCards := aPocket;
+  Board := aBoard;
 
 end;
 
@@ -864,6 +869,16 @@ begin
   {$ENDIF}
 end;
 
+function THand.GetBoard: string;
+begin
+  result := fBoard;
+end;
+
+function THand.GetBoardMask: uint64;
+begin
+  result := THand.ParseHand(Board);
+end;
+
 function THand.GetPocketCards: string;
 begin
   result := fPocketCards;
@@ -1132,9 +1147,15 @@ begin
   UpdateHandMask;
 end;
 
+procedure THand.SetBoardMask(const Value: uint64);
+begin
+  Board := MaskToString(Value);
+end;
+
 procedure THand.SetPocketCards(const Value: string);
 begin
-  fPocketCards := value;
+  fPocketCards := value.Trim;
+  UpdateHandMask;
 end;
 
 procedure THand.SetPocketMask(const Value: uint64);
