@@ -203,7 +203,7 @@ type
     /// <param name="aBoard">The board (must contain either 3 or 4 cards) </param>
     /// <param name="aOpponents">A list of zero or more opponent pocket cards</param>
     /// <returns>A mask of all the cards that improve the mask</returns>
-    class function OutsMask(aPlayer: uint64; aBoard: uint64; aOpponents: array of uint64): uint64; static;
+    class function OutsMask(aPlayer: uint64; aBoard: uint64; aOpponents: TArray<uint64>): uint64; static;
 
     /// <summary>
     ///  Returns the number of outs possible with the next card
@@ -212,7 +212,7 @@ type
     /// <param name="aBoard">The board (must contain either 3 or 4 cards) </param>
     /// <param name="aOpponents">A list of zero or more opponent pocket cards</param>
     /// <returns>The count of the number of single cards that improve the current mask.</returns>
-    class function Outs(aPlayer: uint64; aBoard: uint64; aOpponents: array of uint64): integer; static;
+    class function Outs(aPlayer: uint64; aBoard: uint64; aOpponents: TArray<uint64>): integer; static;
 
     function ToString: string; override;
 
@@ -629,8 +629,6 @@ end;
 
 class function THand.Evaluate(aCards: uint64; aNumberOfCards: integer): uint32;
 begin
-  result := 0;
-
   {$IFDEF DEBUG}
   if (aNumberOfCards < 1) or (aNumberOfCards > 7) then raise EArgumentException.Create('Invalid number of cards');
   {$ENDIF}
@@ -970,15 +968,18 @@ end;
 
 
 class function THand.Outs(aPlayer, aBoard: uint64;
-  aOpponents: array of uint64): integer;
+  aOpponents: TArray<uint64>): integer;
 begin
-  result := THoldemConstants.BitCount(THand.Outs(aPlayer, aBoard, aOpponents));
+  var outMask := THand.OutsMask(aPlayer, aBoard, aOpponents);
+  result := THoldemConstants.BitCount(outMask);
 end;
 
 class function THand.OutsMask(aPlayer, aBoard: uint64;
-  aOpponents: array of uint64): uint64;
+  aOpponents: TArray<uint64>): uint64;
+var
+  playerOrigHandVal, playerOrigHandType, playerOrigTopCard: uint32;
 begin
-  var retVal := 0;
+  var retVal: uint64 := 0;
   var dead: uint64 := 0;
   var nCards := THoldemConstants.BitCount(aPlayer or aBoard);
 
@@ -996,9 +997,9 @@ begin
       dead := dead or opp;
     end;
 
-    var playerOrigHandVal := THand.Evaluate(aPlayer or aBoard, nCards);
-    var playerOrigHandType := THand.EvaluateType(playerOrigHandVal);
-    var playerOrigTopCard := THand.TopCard(playerOrigHandVal);
+    playerOrigHandVal := THand.Evaluate(aPlayer or aBoard, nCards);
+    playerOrigHandType := THand.HandType(playerOrigHandVal);
+    playerOrigTopCard := THand.TopCard(playerOrigHandVal);
 
     THand.ForEachHand(0, dead or aBoard or aPlayer, 1,
       procedure (card: uint64)
@@ -1028,9 +1029,9 @@ begin
   else
   begin
 
-    var playerOrigHandVal := THand.Evaluate(aPlayer or aBoard, nCards + 1);
-    var playerOrigHandType := THand.HandType(playerOrigHandVal);
-    var playerOrigTopCard := THand.TopCard(playerOrigHandVal);
+    playerOrigHandVal := THand.Evaluate(aPlayer or aBoard, nCards);
+    playerOrigHandType := THand.HandType(playerOrigHandVal);
+    playerOrigTopCard := THand.TopCard(playerOrigHandVal);
 
     // look ahead one card
     THand.ForEachHand(0, dead or aBoard or aPlayer, 1,
@@ -1103,9 +1104,10 @@ begin
 
   var index := 1;
   var card := THand.NextCard(aHand, index);
+  var one := uint64(1);
   while card >= 0 do
   begin
-    handMask := handMask or (uint64(1) shl card);
+    handMask := handMask or (one shl card);
     Inc(cards);
 
     card := THand.NextCard(aHand, index);

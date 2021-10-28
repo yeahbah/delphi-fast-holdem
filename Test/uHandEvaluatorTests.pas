@@ -25,6 +25,7 @@ type
 
     procedure TestSuitConsistency();
     procedure TestBasicIterators();
+    procedure TestAnalysis();
   end;
 
 implementation
@@ -92,6 +93,24 @@ begin
   Assert.IsTrue(224848 = handTypes[integer(THandTypes.FourOfAKind)], 'FourOfAKind Returned Incorrect Count');
   Assert.IsTrue(41584 = handTypes[integer(THandTypes.StraightFlush)], 'StraightFlush Returned Incorrect Count');
   Assert.IsTrue(133784560 = count, 'Count Returned Incorrect Value');
+end;
+
+procedure THandEvaluatorTest.TestAnalysis;
+var
+  opponents: array of uint64;
+begin
+  // The outs are: Aces (1), Queens (4), Kings (3), Jacks (3), Tens (3), Spades (9)
+  //SetLength(opponents, 0);
+  var outs := THand.Outs(THand.ParseHand('As Ks'), THand.ParseHand('Js Ts Ad'), []);
+  Assert.IsTrue(outs = 23, 'Check the numer of outs (23)');
+
+  // The only outs are the remaining spades, but not the 5 of spades (7)
+  outs := THand.Outs(THand.ParseHand('As Kd'), THand.ParseHand('2s 3s 4s'), [THand.ParseHand('6s 5d')]);
+  Assert.IsTrue(outs = 7, 'Check the number of outs (7)');
+
+  // The outs are the remaining spades, aces and kings (15)
+  outs := THand.Outs(THand.ParseHand('As Ks'), THand.ParseHand('2s 3s 4d'), [THand.ParseHand('2d 6c')]);
+  Assert.IsTrue(outs = 15, 'Check the number of outs (15)');
 end;
 
 procedure THandEvaluatorTest.TestBasicIterators;
