@@ -1,0 +1,140 @@
+object Form1: TForm1
+  Left = 0
+  Top = 0
+  Caption = 'Form1'
+  ClientHeight = 284
+  ClientWidth = 548
+  FormFactor.Width = 320
+  FormFactor.Height = 480
+  FormFactor.Devices = [Desktop]
+  OnCreate = FormCreate
+  DesignerMasterStyle = 0
+  object btnStart: TButton
+    Align = Bottom
+    Position.Y = 236.000000000000000000
+    Size.Width = 548.000000000000000000
+    Size.Height = 48.000000000000000000
+    Size.PlatformDefault = False
+    TabOrder = 0
+    Text = 'Start'
+    OnClick = btnStartClick
+  end
+  object Z: TGrid3D
+    Marks = 4.000000000000000000
+    Frequency = 1.000000000000000000
+    LineColor = x50505050
+    Width = 1.000000000000000000
+    Height = 1.000000000000000000
+    Depth = 0.001000000047497451
+    object Label1: TLabel
+      Position.X = -56.000000000000000000
+      Position.Y = -8.000000000000000000
+      Text = 'Label1'
+    end
+  end
+  object Label2: TLabel
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 40.000000000000000000
+    Position.Y = 53.000000000000000000
+    Size.Width = 289.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '5-Card Hand Type (Inlined Iteration)'
+    TabOrder = 9
+  end
+  object lbl5CardIteration: TLabel
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 377.000000000000000000
+    Position.Y = 53.000000000000000000
+    Size.Width = 209.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '21,000,000 h/s'
+    TabOrder = 5
+  end
+  object Label3: TLabel
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 40.000000000000000000
+    Position.Y = 93.000000000000000000
+    Size.Width = 289.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '7-Card Hand Type (Inlined Iteration)'
+    TabOrder = 8
+  end
+  object lbl7CardIteration: TLabel
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 377.000000000000000000
+    Position.Y = 93.000000000000000000
+    Size.Width = 209.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '21,000,000 h/s'
+    TabOrder = 4
+  end
+  object Label4: TLabel
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 40.000000000000000000
+    Position.Y = 133.000000000000000000
+    Size.Width = 289.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '5-Card Evaluate Iteration'
+    TabOrder = 7
+  end
+  object lbl5CardEvaluate: TLabel
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 377.000000000000000000
+    Position.Y = 133.000000000000000000
+    Size.Width = 209.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '21,000,000 h/s'
+    TabOrder = 3
+  end
+  object Label5: TLabel
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 40.000000000000000000
+    Position.Y = 176.000000000000000000
+    Size.Width = 289.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '7-Card Evaluate Iteration'
+    TabOrder = 6
+  end
+  object lbl7CardEvaluate: TLabel
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 377.000000000000000000
+    Position.Y = 176.000000000000000000
+    Size.Width = 209.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '21,000,000 h/s'
+    TabOrder = 2
+  end
+  object Label6: TLabel
+    StyledSettings = [Family, Size, FontColor]
+    Position.X = 104.000000000000000000
+    Position.Y = 16.000000000000000000
+    TextSettings.Font.StyleExt = {00070000000000000004000000}
+    Text = 'Benchmark'
+    TabOrder = 12
+  end
+  object Label7: TLabel
+    StyledSettings = [Family, Size, FontColor]
+    Position.X = 377.000000000000000000
+    Position.Y = 16.000000000000000000
+    TextSettings.Font.StyleExt = {00070000000000000004000000}
+    TextSettings.HorzAlign = Center
+    Text = 'Results'
+    TabOrder = 11
+  end
+end
