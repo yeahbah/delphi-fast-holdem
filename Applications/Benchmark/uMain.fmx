@@ -2,8 +2,8 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Form1'
-  ClientHeight = 284
-  ClientWidth = 548
+  ClientHeight = 312
+  ClientWidth = 516
   FormFactor.Width = 320
   FormFactor.Height = 480
   FormFactor.Devices = [Desktop]
@@ -11,8 +11,8 @@ object Form1: TForm1
   DesignerMasterStyle = 0
   object btnStart: TButton
     Align = Bottom
-    Position.Y = 236.000000000000000000
-    Size.Width = 548.000000000000000000
+    Position.Y = 264.000000000000000000
+    Size.Width = 516.000000000000000000
     Size.Height = 48.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
@@ -32,21 +32,10 @@ object Form1: TForm1
       Text = 'Label1'
     end
   end
-  object Label2: TLabel
+  object lbl5CardEvaluate: TLabel
     StyledSettings = [Size, Style, FontColor]
-    Position.X = 40.000000000000000000
-    Position.Y = 53.000000000000000000
-    Size.Width = 289.000000000000000000
-    Size.Height = 17.000000000000000000
-    Size.PlatformDefault = False
-    TextSettings.Font.Family = 'Noto Mono'
-    Text = '5-Card Hand Type (Inlined Iteration)'
-    TabOrder = 9
-  end
-  object lbl5CardIteration: TLabel
-    StyledSettings = [Size, Style, FontColor]
-    Position.X = 377.000000000000000000
-    Position.Y = 53.000000000000000000
+    Position.X = 342.000000000000000000
+    Position.Y = 141.000000000000000000
     Size.Width = 209.000000000000000000
     Size.Height = 17.000000000000000000
     Size.PlatformDefault = False
@@ -54,43 +43,21 @@ object Form1: TForm1
     Text = '21,000,000 h/s'
     TabOrder = 5
   end
-  object Label3: TLabel
+  object Label5: TLabel
     StyledSettings = [Size, Style, FontColor]
-    Position.X = 40.000000000000000000
-    Position.Y = 93.000000000000000000
+    Position.X = 24.000000000000000000
+    Position.Y = 190.000000000000000000
     Size.Width = 289.000000000000000000
     Size.Height = 17.000000000000000000
     Size.PlatformDefault = False
     TextSettings.Font.Family = 'Noto Mono'
-    Text = '7-Card Hand Type (Inlined Iteration)'
-    TabOrder = 8
+    Text = '7-Card Evaluate (Annonymous callback)'
+    TabOrder = 9
   end
-  object lbl7CardIteration: TLabel
+  object lbl7CardEvaluate: TLabel
     StyledSettings = [Size, Style, FontColor]
-    Position.X = 377.000000000000000000
-    Position.Y = 93.000000000000000000
-    Size.Width = 209.000000000000000000
-    Size.Height = 17.000000000000000000
-    Size.PlatformDefault = False
-    TextSettings.Font.Family = 'Noto Mono'
-    Text = '21,000,000 h/s'
-    TabOrder = 4
-  end
-  object Label4: TLabel
-    StyledSettings = [Size, Style, FontColor]
-    Position.X = 40.000000000000000000
-    Position.Y = 133.000000000000000000
-    Size.Width = 289.000000000000000000
-    Size.Height = 17.000000000000000000
-    Size.PlatformDefault = False
-    TextSettings.Font.Family = 'Noto Mono'
-    Text = '5-Card Evaluate Iteration'
-    TabOrder = 7
-  end
-  object lbl5CardEvaluate: TLabel
-    StyledSettings = [Size, Style, FontColor]
-    Position.X = 377.000000000000000000
-    Position.Y = 133.000000000000000000
+    Position.X = 342.000000000000000000
+    Position.Y = 190.000000000000000000
     Size.Width = 209.000000000000000000
     Size.Height = 17.000000000000000000
     Size.PlatformDefault = False
@@ -98,43 +65,174 @@ object Form1: TForm1
     Text = '21,000,000 h/s'
     TabOrder = 3
   end
-  object Label5: TLabel
-    StyledSettings = [Size, Style, FontColor]
-    Position.X = 40.000000000000000000
-    Position.Y = 176.000000000000000000
-    Size.Width = 289.000000000000000000
-    Size.Height = 17.000000000000000000
-    Size.PlatformDefault = False
-    TextSettings.Font.Family = 'Noto Mono'
-    Text = '7-Card Evaluate Iteration'
-    TabOrder = 6
-  end
-  object lbl7CardEvaluate: TLabel
-    StyledSettings = [Size, Style, FontColor]
-    Position.X = 377.000000000000000000
-    Position.Y = 176.000000000000000000
-    Size.Width = 209.000000000000000000
-    Size.Height = 17.000000000000000000
-    Size.PlatformDefault = False
-    TextSettings.Font.Family = 'Noto Mono'
-    Text = '21,000,000 h/s'
-    TabOrder = 2
-  end
   object Label6: TLabel
     StyledSettings = [Family, Size, FontColor]
     Position.X = 104.000000000000000000
     Position.Y = 16.000000000000000000
     TextSettings.Font.StyleExt = {00070000000000000004000000}
     Text = 'Benchmark'
-    TabOrder = 12
+    TabOrder = 18
   end
   object Label7: TLabel
     StyledSettings = [Family, Size, FontColor]
-    Position.X = 377.000000000000000000
+    Position.X = 332.000000000000000000
     Position.Y = 16.000000000000000000
     TextSettings.Font.StyleExt = {00070000000000000004000000}
     TextSettings.HorzAlign = Center
     Text = 'Results'
+    TabOrder = 16
+  end
+  object Label2: TLabel
+    Anchors = []
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 24.000000000000000000
+    Position.Y = 41.000000000000000000
+    Size.Width = 293.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '5-Card Hand Type (Annonymous callback)'
+    TabOrder = 20
+  end
+  object lbl5CardIteration: TLabel
+    Anchors = []
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 342.000000000000000000
+    Position.Y = 41.000000000000000000
+    Size.Width = 209.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '21,000,000 h/s'
+    TabOrder = 15
+  end
+  object Label8: TLabel
+    Anchors = []
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 24.000000000000000000
+    Position.Y = 65.000000000000000000
+    Size.Width = 289.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '5-Card Hand Type (Inlined Iteration)'
+    TabOrder = 17
+  end
+  object lbl5HandTypeInline: TLabel
+    Anchors = []
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 342.000000000000000000
+    Position.Y = 66.000000000000000000
+    Size.Width = 209.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '21,000,000 h/s'
+    TabOrder = 12
+  end
+  object Label3: TLabel
+    Anchors = []
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 24.000000000000000000
+    Position.Y = 90.000000000000000000
+    Size.Width = 289.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '7-Card Hand Type (Annonymous callback)'
     TabOrder = 11
+  end
+  object lbl7CardIteration: TLabel
+    Anchors = []
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 342.000000000000000000
+    Position.Y = 91.000000000000000000
+    Size.Width = 209.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '21,000,000 h/s'
+    TabOrder = 7
+  end
+  object Label9: TLabel
+    Anchors = []
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 24.000000000000000000
+    Position.Y = 115.000000000000000000
+    Size.Width = 289.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '7-Card Hand Type (Inlined Iteration)'
+    TabOrder = 10
+  end
+  object Label4: TLabel
+    Anchors = []
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 24.000000000000000000
+    Position.Y = 140.000000000000000000
+    Size.Width = 289.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '5-Card Evaluate (Annonymous callback)'
+    TabOrder = 14
+  end
+  object Label10: TLabel
+    Anchors = []
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 24.000000000000000000
+    Position.Y = 165.000000000000000000
+    Size.Width = 289.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '5-Card Evaluate (Inline iteration)'
+    TabOrder = 13
+  end
+  object lbl5CardEvaluateInlined: TLabel
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 342.000000000000000000
+    Position.Y = 165.000000000000000000
+    Size.Width = 209.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '21,000,000 h/s'
+    TabOrder = 4
+  end
+  object lbl7CardHandTypeInlined: TLabel
+    Anchors = []
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 342.000000000000000000
+    Position.Y = 116.000000000000000000
+    Size.Width = 209.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '21,000,000 h/s'
+    TabOrder = 6
+  end
+  object Label13: TLabel
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 24.000000000000000000
+    Position.Y = 215.000000000000000000
+    Size.Width = 289.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '7-Card Evaluate (Inline iteration)'
+    TabOrder = 8
+  end
+  object lbl7CardEvaluateInline: TLabel
+    StyledSettings = [Size, Style, FontColor]
+    Position.X = 342.000000000000000000
+    Position.Y = 215.000000000000000000
+    Size.Width = 209.000000000000000000
+    Size.Height = 17.000000000000000000
+    Size.PlatformDefault = False
+    TextSettings.Font.Family = 'Noto Mono'
+    Text = '21,000,000 h/s'
+    TabOrder = 2
   end
 end

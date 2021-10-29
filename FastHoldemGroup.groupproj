@@ -12,6 +12,9 @@
         <Projects Include="Applications\Benchmark\Benchmark.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="Applications\HandOdds\HandOdds.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -47,14 +50,23 @@
     <Target Name="Benchmark:Make">
         <MSBuild Projects="Applications\Benchmark\Benchmark.dproj" Targets="Make"/>
     </Target>
+    <Target Name="HandOdds">
+        <MSBuild Projects="Applications\HandOdds\HandOdds.dproj"/>
+    </Target>
+    <Target Name="HandOdds:Clean">
+        <MSBuild Projects="Applications\HandOdds\HandOdds.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="HandOdds:Make">
+        <MSBuild Projects="Applications\HandOdds\HandOdds.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="FastHoldem;FastHoldemTest;Benchmark"/>
+        <CallTarget Targets="FastHoldem;FastHoldemTest;Benchmark;HandOdds"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="FastHoldem:Clean;FastHoldemTest:Clean;Benchmark:Clean"/>
+        <CallTarget Targets="FastHoldem:Clean;FastHoldemTest:Clean;Benchmark:Clean;HandOdds:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="FastHoldem:Make;FastHoldemTest:Make;Benchmark:Make"/>
+        <CallTarget Targets="FastHoldem:Make;FastHoldemTest:Make;Benchmark:Make;HandOdds:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

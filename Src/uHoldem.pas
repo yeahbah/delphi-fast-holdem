@@ -6,6 +6,11 @@ uses
   uHandTypes, SysUtils;
 
 type
+  THandOddsResult = record
+    Wins, Ties, Losses: TArray<uint64>;
+    TotalHands: uint64;
+  end;
+
   THand = class(TInterfacedObject, IComparable)
   strict private
     /// <summary>
@@ -217,6 +222,16 @@ type
     /// <returns>The count of the number of single cards that improve the current mask.</returns>
     class function Outs(aPlayer: uint64; aBoard: uint64; aOpponents: TArray<uint64>): integer; static;
 
+    /// <summary>
+    ///  Used to calculate the winning information about each players mask. This function enumerates all
+    ///  possible remaining hands and tallies win, tie and losses for each player. This function typically takes
+    ///  well less than a second regardless of the number of players.
+    /// </summary>
+    /// <param name="aPockets">Array of pocket mask string, one for each player</param>
+    /// <param name="aBoard">the board cards</param>
+    /// <param name="aDeadCards">the dead cards</param>
+    class function HandWinOdds(aPockets: TArray<string>; aBoard: string; aDeadCards: string): THandOddsResult; static;
+
     function ToString: string; override;
 
     property PocketCards: string read GetPocketCards write SetPocketCards;
@@ -273,6 +288,50 @@ end;
 class function THand.HandTypeValue(aHandType: THandTypes): uint32;
 begin
   result := uint32(aHandType) shl THoldemConstants.HAND_TYPE_SHIFT;
+end;
+
+class function THand.HandWinOdds(aPockets: TArray<string>; aBoard,
+  aDeadCards: string): THandOddsResult;
+begin
+  // initialize the result
+  SetLength(result.Wins, Length(aPockets));
+  SetLength(result.Ties, Length(aPockets));
+  SetLength(result.Losses, Length(aPockets));
+  result.TotalHands := 0;
+
+  var pocketMasks: TArray<uint64>;
+  SetLength(pocketMasks, Length(aPockets));
+
+  var pocketHands: TArray<uint64>;
+  SetLength(pocketHands, Length(aPockets));
+
+  var count := 0;
+  var bestCount := 0;
+
+  var boardMask: uint64 := 0;
+  var deadCardMask: uint64 := 0;
+  var deadCards := THand.ParseHand(aDeadCards, count);
+
+  deadCardMask := deadCardMask or deadCards;
+
+  // read pocket cards
+  for var i := 0 to Length(aPockets) - 1 do
+  begin
+    count := 0;
+    pocketMasks[i] := THand.ParseHand(aPockets[i], '', count);
+    if count <> 2 then
+      raise EArgumentException.Create('There must be two pocket cards.');
+
+    deadCardMask := deadCardMask or pocketMasks[i];
+    result.Wins[i] := 0;
+    result.Ties[i] := 0;
+    result.Losses[i] := 0;
+  end;
+
+  count := 0;
+  boardMask := THand.ParseHand('', aBoard, count);
+
+
 end;
 
 function THand.IsLessThan(aHand: THand): boolean;
@@ -696,9 +755,9 @@ begin
   // 1) There's no five-card mask possible (flush or straight), or
   // 2) There's a flush or straight, but we know that there are enough
   //    duplicates to make a full house / quads possible
-  var fourMask: uint32 := 0;
-  var threeMask: uint32 := 0;
-  var twoMask: uint32 := 0;
+  var fourMask: uint32;
+  var threeMask: uint32;
+  var twoMask: uint32;
 
   case nDups of
     0: Exit(THoldemConstants.HANDTYPE_VALUE_HIGHCARD + TopFiveCardsTable[ranks]);
@@ -865,7 +924,7 @@ begin
     raise EArgumentException.Create('Invalid card count');
   Exit(EvaluateType(aMask, cards));
   {$ELSE}
-  Exit(EvaluateType(aMask, THoldemCount.BitCount(aMask))
+  Exit(EvaluateType(aMask, THoldemConstants.BitCount(aMask)));
   {$ENDIF}
 end;
 
