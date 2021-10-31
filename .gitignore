@@ -76,3 +76,4 @@ Applications/Benchmark/Linux64/*
 Applications/Benchmark/*.res
 *.tmp
 *~
+Applications/HandOdds/Linux64/*

@@ -9,19 +9,9 @@
     </PropertyGroup>
     <ItemGroup Condition="'$(Platform)'=='Win64'"/>
     <ItemGroup Condition="'$(Platform)'=='Linux64'">
-        <DeployFile Include="Linux64\Release\Benchmark" Condition="'$(Config)'=='Release'">
-            <RemoteDir>Benchmark\</RemoteDir>
-            <RemoteName>Benchmark</RemoteName>
-            <DeployClass>ProjectOutput</DeployClass>
-            <Operation>1</Operation>
-            <LocalCommand/>
-            <RemoteCommand/>
-            <Overwrite>True</Overwrite>
-            <Required>True</Required>
-        </DeployFile>
-        <DeployFile Include="Linux64\Debug\Benchmark" Condition="'$(Config)'=='Debug'">
-            <RemoteDir>Benchmark\</RemoteDir>
-            <RemoteName>Benchmark</RemoteName>
+        <DeployFile Include="Linux64\Debug\HandOdds" Condition="'$(Config)'=='Debug'">
+            <RemoteDir>HandOdds\</RemoteDir>
+            <RemoteName>HandOdds</RemoteName>
             <DeployClass>ProjectOutput</DeployClass>
             <Operation>1</Operation>
             <LocalCommand/>
@@ -31,9 +21,9 @@
         </DeployFile>
     </ItemGroup>
     <ItemGroup Condition="'$(Platform)'=='Win32'">
-        <DeployFile Include="Win32\Debug\Benchmark.exe" Condition="'$(Config)'=='Debug'">
-            <RemoteDir>Benchmark\</RemoteDir>
-            <RemoteName>Benchmark.exe</RemoteName>
+        <DeployFile Include="Win32\Debug\HandOdds.exe" Condition="'$(Config)'=='Debug'">
+            <RemoteDir>HandOdds\</RemoteDir>
+            <RemoteName>HandOdds.exe</RemoteName>
             <DeployClass>ProjectOutput</DeployClass>
             <Operation>0</Operation>
             <LocalCommand/>
