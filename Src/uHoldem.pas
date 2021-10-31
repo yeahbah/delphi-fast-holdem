@@ -12,6 +12,12 @@ type
     constructor Create(Wins, Ties, Losses: TArray<uint64>; TotalHands: uint64);
   end;
 
+  THandPotentialResult = record
+    PositivePotential: double;
+    NegativePotential: double;
+    constructor Create(aPositivePotential, aNegativePotential: double);
+  end;
+
   THand = class(TInterfacedObject, IComparable)
   strict private
     /// <summary>
@@ -232,6 +238,14 @@ type
     /// <param name="aBoard">the board cards</param>
     /// <param name="aDeadCards">the dead cards</param>
     class function HandWinOdds(aPockets: TArray<string>; aBoard: string; aDeadCards: string): THandOddsResult; static;
+
+    /// <summary>
+    ///  Returns the normalized positive and negative potential of the current mask. This function
+    ///  is described in Aaron Davidson's masters thesis on page 23
+    /// </summary>
+    /// <param name="aPocket">Hold Cards</param>
+    /// <param name="aBoard">Community cards</param>
+    class function HandPotential(aPocket, aBoard: uint64): THandPotentialResult; static;
 
     function ToString: string; override;
 
@@ -1034,6 +1048,80 @@ begin
   result := HandValue >= aHand.HandValue;
 end;
 
+class function THand.HandPotential(aPocket,
+  aBoard: uint64): THandPotentialResult;
+var
+  hp: array[0..2] of array[0..2] of integer;
+  hpTotal: array[0..2] of integer;
+begin
+  const ahead = 2;
+  const tied = 1;
+  const behind = 0;
+
+  {$IFDEF DEBUG}
+  if THoldemConstants.BitCount(aPocket) <> 2 then
+    raise EArgumentException.Create('Pocket must contain exactly two cards.');
+  if (THoldemConstants.BitCount(aBoard) <> 3) and (THoldemConstants.BitCount(aBoard) <> 4) then
+    raise EArgumentException.Create('Board must contain only 3 or 4 cards');
+  {$ENDIF}
+
+  var nCards := THoldemConstants.BitCount(aPocket or aBoard);
+  var multi: double := 45;
+  if nCards = 5 then
+    multi := 990;
+
+  var ourBest, oppBest: uint32;
+
+  {$IFDEF DEBUG}
+  if (nCards < 5) or (nCards > 7) then
+    raise EArgumentException.Create('Invalid number of cards');
+  {$ENDIF}
+
+  var ourRank := THand.Evaluate(aPocket or aBoard, nCards);
+
+  // iterate through all possible opponent pocket cards
+  THand.ForEachHand(0, aPocket or aBoard, 2,
+    procedure (aOppPocket: uint64)
+    begin
+      var oppRank := THand.Evaluate(aOppPocket or aBoard, nCards);
+      var index := behind;
+      if ourRank > oppRank then
+        index := ahead
+      else
+      if ourRank = oppRank then
+        index := tied;
+
+      THand.ForEachHand(aBoard, aPocket or aOppPocket, 5,
+        procedure (aBoardMask: uint64)
+        begin
+          ourBest := THand.Evaluate(aPocket or aBoardMask, 7);
+          oppBest := THand.Evaluate(aOppPocket or aBoardMask, 7);
+          if ourBest > oppBest then
+            hp[index, ahead] := hp[index, ahead] + 1
+          else
+          if ourBest = oppBest then
+            hp[index, tied] := hp[index, tied] + 1
+          else
+            hp[index, behind] := hp[index, behind] + 1;
+
+        end);
+
+      hpTotal[index] := hpTotal[index] + 1;
+    end);
+
+  var den1 := multi * (hpTotal[behind] + hpTotal[tied] / 2);
+  var den2 := multi * (hpTotal[ahead] + hpTotal[tied] / 2);
+  if den1 > 0 then
+    result.PositivePotential := ((hp[behind, ahead] + hp[behind, tied] / 2) + (hp[tied, ahead] / 2)) / den1
+  else
+    result.PositivePotential := 0;
+
+  if den2 > 0 then
+    result.PositivePotential := ((hp[ahead, behind] + hp[ahead, tied] / 2) + hp[tied, behind] / 2) / den2
+  else
+    result.NegativePotential := 0;
+end;
+
 class function THand.HandType(aHandValue: uint32): uint32;
 begin
   result := aHandValue shr THoldemConstants.HAND_TYPE_SHIFT;
@@ -1625,6 +1713,15 @@ begin
   Self.Ties := Ties;
   Self.Losses := Losses;
   Self.TotalHands := TotalHands;
+end;
+
+{ THandPotentialResult }
+
+constructor THandPotentialResult.Create(aPositivePotential,
+  aNegativePotential: double);
+begin
+  PositivePotential := aPositivePotential;
+  NegativePotential := aNegativePotential;
 end;
 
 initialization

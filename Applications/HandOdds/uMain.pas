@@ -54,6 +54,7 @@ uses
 
 procedure TfrmMain.Button1Click(Sender: TObject);
 begin
+  ResetForm;
   CalculateOdds;
 end;
 
