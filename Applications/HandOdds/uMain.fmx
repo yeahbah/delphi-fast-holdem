@@ -3,8 +3,8 @@ object frmMain: TfrmMain
   Top = 0
   BorderIcons = [biSystemMenu, biMinimize]
   Caption = 'Hand Odds'
-  ClientHeight = 261
-  ClientWidth = 517
+  ClientHeight = 260
+  ClientWidth = 484
   FormFactor.Width = 320
   FormFactor.Height = 480
   FormFactor.Devices = [Desktop]
@@ -12,11 +12,11 @@ object frmMain: TfrmMain
   DesignerMasterStyle = 0
   object Panel1: TPanel
     Align = Top
-    Size.Width = 517.000000000000000000
+    Size.Width = 484.000000000000000000
     Size.Height = 57.000000000000000000
     Size.PlatformDefault = False
     StyleLookup = 'panelstyle'
-    TabOrder = 0
+    TabOrder = 5
     object Label1: TLabel
       Position.X = 24.000000000000000000
       Position.Y = 24.000000000000000000
@@ -49,7 +49,7 @@ object frmMain: TfrmMain
       TabOrder = 3
       Position.X = 337.000000000000000000
       Position.Y = 19.000000000000000000
-      Size.Width = 160.000000000000000000
+      Size.Width = 128.000000000000000000
       Size.Height = 22.000000000000000000
       Size.PlatformDefault = False
     end
@@ -61,25 +61,53 @@ object frmMain: TfrmMain
     Size.Height = 17.000000000000000000
     Size.PlatformDefault = False
     Text = 'Player 1'
-    TabOrder = 6
+    TabOrder = 9
   end
   object edPlayer1: TEdit
     Touch.InteractiveGestures = [LongTap, DoubleTap]
-    TabOrder = 8
+    TabOrder = 0
     Position.X = 104.000000000000000000
     Position.Y = 75.000000000000000000
+    Padding.Right = 5.000000000000000000
     Size.Width = 361.000000000000000000
     Size.Height = 22.000000000000000000
     Size.PlatformDefault = False
+    object lblPlayer1Result: TLabel
+      Align = Right
+      StyledSettings = [Family, Size, Style]
+      Padding.Right = 5.000000000000000000
+      Position.X = 299.000000000000000000
+      Size.Width = 57.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.FontColor = claGray
+      TextSettings.HorzAlign = Trailing
+      Text = 'lblPlayer1Result'
+      TabOrder = 12
+    end
   end
   object edPlayer2: TEdit
     Touch.InteractiveGestures = [LongTap, DoubleTap]
-    TabOrder = 7
+    TabOrder = 1
     Position.X = 104.000000000000000000
     Position.Y = 105.000000000000000000
+    Padding.Right = 5.000000000000000000
     Size.Width = 361.000000000000000000
     Size.Height = 22.000000000000000000
     Size.PlatformDefault = False
+    object lblPlayer2Result: TLabel
+      Align = Right
+      StyledSettings = [Family, Size, Style]
+      Padding.Right = 5.000000000000000000
+      Position.X = 299.000000000000000000
+      Size.Width = 57.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.FontColor = claGray
+      TextSettings.HorzAlign = Trailing
+      Text = 'Label7'
+      TabOrder = 11
+    end
   end
   object Label4: TLabel
     Position.X = 24.000000000000000000
@@ -88,16 +116,29 @@ object frmMain: TfrmMain
     Size.Height = 17.000000000000000000
     Size.PlatformDefault = False
     Text = 'Player 2'
-    TabOrder = 4
+    TabOrder = 8
   end
   object edPlayer3: TEdit
     Touch.InteractiveGestures = [LongTap, DoubleTap]
-    TabOrder = 5
+    TabOrder = 2
     Position.X = 104.000000000000000000
     Position.Y = 135.000000000000000000
+    Padding.Right = 5.000000000000000000
     Size.Width = 361.000000000000000000
     Size.Height = 22.000000000000000000
     Size.PlatformDefault = False
+    object lblPlayer3Result: TLabel
+      Align = Right
+      StyledSettings = [Family, Size, Style]
+      Position.X = 299.000000000000000000
+      Size.Width = 57.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.FontColor = claGray
+      TextSettings.HorzAlign = Trailing
+      Text = 'Label7'
+      TabOrder = 10
+    end
   end
   object Label5: TLabel
     Position.X = 24.000000000000000000
@@ -106,22 +147,28 @@ object frmMain: TfrmMain
     Size.Height = 17.000000000000000000
     Size.PlatformDefault = False
     Text = 'Player 3'
-    TabOrder = 2
+    TabOrder = 7
   end
   object edPlayer4: TEdit
     Touch.InteractiveGestures = [LongTap, DoubleTap]
     TabOrder = 3
     Position.X = 104.000000000000000000
     Position.Y = 165.000000000000000000
+    Padding.Right = 5.000000000000000000
     Size.Width = 361.000000000000000000
     Size.Height = 22.000000000000000000
     Size.PlatformDefault = False
-    object Button1: TButton
-      Position.X = 128.000000000000000000
-      Position.Y = 40.000000000000000000
-      TabOrder = 0
-      Text = '&Calculate'
-      OnClick = Button1Click
+    object lblPlayer4Result: TLabel
+      Align = Right
+      StyledSettings = [Family, Size, Style]
+      Position.X = 299.000000000000000000
+      Size.Width = 57.000000000000000000
+      Size.Height = 22.000000000000000000
+      Size.PlatformDefault = False
+      TextSettings.FontColor = claGray
+      TextSettings.HorzAlign = Trailing
+      Text = 'Label7'
+      TabOrder = 8
     end
   end
   object Label6: TLabel
@@ -131,59 +178,30 @@ object frmMain: TfrmMain
     Size.Height = 17.000000000000000000
     Size.PlatformDefault = False
     Text = 'Player 4'
-    TabOrder = 1
-  end
-  object lblPlayer1Result: TLabel
-    Position.X = 473.000000000000000000
-    Position.Y = 80.000000000000000000
-    Size.Width = 57.000000000000000000
-    Size.Height = 17.000000000000000000
-    Size.PlatformDefault = False
-    Text = 'lblPlayer1Result'
-    TabOrder = 12
-  end
-  object lblPlayer2Result: TLabel
-    Position.X = 473.000000000000000000
-    Position.Y = 110.000000000000000000
-    Size.Width = 57.000000000000000000
-    Size.Height = 17.000000000000000000
-    Size.PlatformDefault = False
-    Text = 'Label7'
-    TabOrder = 11
-  end
-  object lblPlayer3Result: TLabel
-    Position.X = 473.000000000000000000
-    Position.Y = 140.000000000000000000
-    Size.Width = 57.000000000000000000
-    Size.Height = 17.000000000000000000
-    Size.PlatformDefault = False
-    Text = 'Label7'
-    TabOrder = 10
-  end
-  object lblPlayer4Result: TLabel
-    Position.X = 473.000000000000000000
-    Position.Y = 170.000000000000000000
-    Size.Width = 57.000000000000000000
-    Size.Height = 17.000000000000000000
-    Size.PlatformDefault = False
-    Text = 'Label7'
-    TabOrder = 9
+    TabOrder = 6
   end
   object StatusBar1: TStatusBar
-    Position.Y = 239.000000000000000000
+    Position.Y = 238.000000000000000000
     ShowSizeGrip = True
-    Size.Width = 517.000000000000000000
+    Size.Width = 484.000000000000000000
     Size.Height = 22.000000000000000000
     Size.PlatformDefault = False
-    TabOrder = 13
+    TabOrder = 11
     object lblResult: TLabel
-      Align = Center
-      Size.Width = 155.294128417968800000
+      Align = Client
+      Size.Width = 484.000000000000000000
       Size.Height = 22.000000000000000000
       Size.PlatformDefault = False
       TextSettings.HorzAlign = Center
       Text = 'lblResult'
       TabOrder = 0
     end
+  end
+  object Button1: TButton
+    Position.X = 224.000000000000000000
+    Position.Y = 201.000000000000000000
+    TabOrder = 4
+    Text = '&Calculate'
+    OnClick = Button1Click
   end
 end

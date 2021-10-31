@@ -8,7 +8,7 @@ uses
 type
   [TestFixture]
   THandEvaluatorTest = class
-  published
+  public
     procedure ValidateHandTest();
     procedure EvaludateTypeTest();
 
@@ -29,6 +29,9 @@ type
 
     procedure TestEquality();
     procedure TestInstanceComparison();
+
+  published
+    procedure TestEvaluate();
   end;
 
 implementation
@@ -187,6 +190,47 @@ begin
           Assert.IsTrue(hand1.Equals(hand2), 'Equality test failed');
         end);
     end);
+end;
+
+procedure THandEvaluatorTest.TestEvaluate;
+begin
+  //  var pocket := 'As Ks';
+  //  var dead := '2h 8s';
+  var hand := THand.Evaluate('2s 3c 4s 5d 6h As Ks');
+  var handType := THand.HandType(hand);
+  Assert.IsTrue(handType = integer(THandTypes.Straight));
+
+  hand := THand.Evaluate('2s 3c 4s 5d 6s As Ks');
+  handType := THand.HandType(hand);
+  Assert.IsTrue(handType = integer(THandTypes.Flush));
+
+  hand := THand.Evaluate('2s 3c 8s 5d 7s Ac Jc');
+  handType := THand.HandType(hand);
+  Assert.IsTrue(handType = integer(THandTypes.HighCard));
+
+  hand := THand.Evaluate('2s 3c 8s 5d 7s Ac As');
+  handType := THand.HandType(hand);
+  Assert.IsTrue(handType = integer(THandTypes.Pair));
+
+  hand := THand.Evaluate('2s 3c 8s 7d 7s Ac As');
+  handType := THand.HandType(hand);
+  Assert.IsTrue(handType = integer(THandTypes.TwoPair));
+
+  hand := THand.Evaluate('2s 3c 8s 7d Ad Ac As');
+  handType := THand.HandType(hand);
+  Assert.IsTrue(handType = integer(THandTypes.Trips));
+
+  hand := THand.Evaluate('2s 3c 8s Ah Ad Ac As');
+  handType := THand.HandType(hand);
+  Assert.IsTrue(handType = integer(THandTypes.FourOfAKind));
+
+  hand := THand.Evaluate('2s 3c 7s 7h 7d Ac As');
+  handType := THand.HandType(hand);
+  Assert.IsTrue(handType = integer(THandTypes.FullHouse));
+
+  hand := THand.Evaluate('2s 3c Qs Ts Js As Ks');
+  handType := THand.HandType(hand);
+  Assert.IsTrue(handType = integer(THandTypes.StraightFlush));
 end;
 
 procedure THandEvaluatorTest.TestInstanceComparison;

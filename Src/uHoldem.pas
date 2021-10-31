@@ -9,6 +9,7 @@ type
   THandOddsResult = record
     Wins, Ties, Losses: TArray<uint64>;
     TotalHands: uint64;
+    constructor Create(Wins, Ties, Losses: TArray<uint64>; TotalHands: uint64);
   end;
 
   THand = class(TInterfacedObject, IComparable)
@@ -292,6 +293,8 @@ end;
 
 class function THand.HandWinOdds(aPockets: TArray<string>; aBoard,
   aDeadCards: string): THandOddsResult;
+var
+  pocketMasks1: TArray<uint64>;
 begin
   // initialize the result
   SetLength(result.Wins, Length(aPockets));
@@ -301,6 +304,7 @@ begin
 
   var pocketMasks: TArray<uint64>;
   SetLength(pocketMasks, Length(aPockets));
+  pocketMasks1 := pocketMasks;
 
   var pocketHands: TArray<uint64>;
   SetLength(pocketHands, Length(aPockets));
@@ -315,7 +319,7 @@ begin
   deadCardMask := deadCardMask or deadCards;
 
   // read pocket cards
-  for var i := 0 to Length(aPockets) - 1 do
+  for var i := 0 to High(aPockets) do
   begin
     count := 0;
     pocketMasks[i] := THand.ParseHand(aPockets[i], '', count);
@@ -331,7 +335,74 @@ begin
   count := 0;
   boardMask := THand.ParseHand('', aBoard, count);
 
+  {$IFDEF DEBUG}
+  // the board must have zero or more cards but no more than a total of 5
+  Assert((count >= 0) and (count <= 5));
 
+  // check pocket cards, board and dead cards for duplicates
+  if boardMask and deadCards <> 0 then
+    raise EArgumentException.Create('Duplicate between cards, dead cards and board');
+
+  // validate the input
+  for var i := 0 to High(aPockets) do
+  begin
+    for var j := i + 1 to High(aPockets) do
+    begin
+      if (pocketMasks[i] and pocketMasks[j]) <> 0 then
+        raise EArgumentException.Create('Duplicate pocket cards');
+
+      if (pocketMasks[i] and boardMask) <> 0 then
+        raise EArgumentException.Create('Duplicate between cards pocket and board');
+
+      if (pocketMasks[i] and deadCards) <> 0 then
+        raise EArgumentException.Create('Duplicate between cards pocket and dead cards');
+
+    end;
+  end;
+  {$ENDIF}
+
+  var retVal := THandOddsResult.Create(result.Wins, result.Ties, result.Losses, result.TotalHands);
+  THand.ForEachHand(boardMask, deadCardMask, 5,
+    procedure (aBoardHand: uint64)
+    begin
+      // evaluate all hands and determine the best mask
+      var bestPocket := THand.Evaluate(pocketMasks[0] or aBoardHand, 7);
+      pocketHands[0] := bestPocket;
+      bestCount := 1;
+      for var i := 1 to Length(aPockets) - 1 do
+      begin
+        pocketHands[i] := THand.Evaluate(pocketMasks[i] or aBoardHand, 7);
+        if pocketHands[i] > bestPocket then
+        begin
+          bestPocket := pocketHands[i];
+          bestCount := 1;
+        end
+        else
+        if pocketHands[i] = bestPocket then
+        begin
+          Inc(bestCount);
+        end;
+      end;
+
+      // calculate wins/ties/losses for each pocket + board combination
+      for var i := 0 to High(aPockets) do
+      begin
+        if pocketHands[i] = bestPocket then
+        begin
+          if bestCount > 1 then
+            retVal.Ties[i] := retVal.Ties[i] + 1
+          else
+            RetVal.Wins[i] := retVal.Wins[i] + 1;
+        end
+        else
+        if pocketHands[i] < bestPocket then
+          retVal.Losses[i] := retVal.Losses[i] + 1
+      end;
+
+      Inc(retVal.TotalHands);
+    end);
+
+  result := retVal;
 end;
 
 function THand.IsLessThan(aHand: THand): boolean;
@@ -696,6 +767,7 @@ begin
   {$IFDEF DEBUG}
   if (aNumberOfCards < 1) or (aNumberOfCards > 7) then raise EArgumentException.Create('Invalid number of cards');
   {$ENDIF}
+  result := 0;
 
   var sc: uint32 := uint32((aCards shr THoldemConstants.CLUB_OFFSET) and $1FFF);
   var sd: uint32 := uint32((aCards shr THoldemConstants.DIAMOND_OFFSET) and $1FFF);
@@ -1542,6 +1614,17 @@ begin
   begin
     aDo(RandomHand(aShared, aDead, cardCount) or aShared);
   end;
+end;
+
+{ THandOddsResult }
+
+constructor THandOddsResult.Create(Wins, Ties, Losses: TArray<uint64>;
+  TotalHands: uint64);
+begin
+  Self.Wins := Wins;
+  Self.Ties := Ties;
+  Self.Losses := Losses;
+  Self.TotalHands := TotalHands;
 end;
 
 initialization

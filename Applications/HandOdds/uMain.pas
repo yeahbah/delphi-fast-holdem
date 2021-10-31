@@ -35,6 +35,7 @@ type
     { Private declarations }
     procedure ResetForm;
     procedure CalculateOdds;
+    procedure SetPlayerValue(aIndex: integer; aValue: double);
   public
     { Public declarations }
   end;
@@ -95,7 +96,18 @@ begin
 
   try
     var stopWatch := TStopwatch.StartNew;
-    THand.HandWinOdds(pocketCards, edBoard.Text, edDeadCards.Text);
+    var winOdds := THand.HandWinOdds(pocketCards, edBoard.Text, edDeadCards.Text);
+    var duration := stopWatch.Elapsed;
+    Assert(winOdds.TotalHands <> 0);
+
+    if winOdds.TotalHands <> 0 then
+    begin
+      for var i := 0 to count - 1 do
+      begin
+        SetPlayerValue(pocketIndex[i], (winOdds.Wins[i] + winOdds.Ties[i] / 2) / winOdds.TotalHands);
+      end;
+    end;
+    lblResult.Text := FormatFloat('#,##0', winOdds.TotalHands) + ' hands evaluated in ' + duration.TotalSeconds.ToString + ' seconds.';
 
   except on E: Exception do
     lblResult.Text := 'Unable to process ' + E.Message;
@@ -106,8 +118,8 @@ end;
 procedure TfrmMain.FormCreate(Sender: TObject);
 begin
   ResetForm;
-  lblPlayer1Result.Text := 'As Ks';
-  lblPlayer2Result.Text := 'Jd Jc';
+  edPlayer1.Text := 'As Ks';
+  edPlayer2.Text := 'Jd Jc';
   edDeadCards.Text := '2h 8s';
 end;
 
@@ -120,6 +132,17 @@ begin
   lblResult.Text := '';
   edBoard.Text := '';
   edDeadCards.Text := '';
+end;
+
+procedure TfrmMain.SetPlayerValue(aIndex: integer; aValue: double);
+begin
+  var pct := FormatFloat('#0.##%',(aValue * 100));
+  case aIndex of
+    0: lblPlayer1Result.Text := pct;
+    1: lblPlayer2Result.Text := pct;
+    2: lblPlayer3Result.Text := pct;
+    3: lblPlayer4Result.Text := pct;
+  end;
 end;
 
 end.
